@@ -2,8 +2,10 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { Product } from "@/data/products";
+import { products as defaultProducts } from "@/data/products";
 import {
   getProducts as getStoredProducts,
+  setStoredProducts,
   trackView as storeTrackView,
   trackClick as storeTrackClick,
 } from "@/lib/admin-store";
@@ -22,13 +24,56 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshProducts = useCallback(() => {
+  const refreshProducts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/stock");
+      if (res.status === 204) {
+        setProducts(getStoredProducts());
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setProducts(data);
+          setStoredProducts(data);
+          return;
+        }
+      }
+    } catch {
+      /* fallback local */
+    }
     setProducts(getStoredProducts());
   }, []);
 
   useEffect(() => {
-    setProducts(getStoredProducts());
-    setIsLoading(false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/stock");
+        if (cancelled) return;
+        if (res.status === 204) {
+          setProducts(getStoredProducts());
+          setIsLoading(false);
+          return;
+        }
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setProducts(data);
+            setStoredProducts(data);
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch {
+        if (cancelled) return;
+      }
+      setProducts(getStoredProducts());
+      setIsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const trackView = useCallback((productId: string) => {

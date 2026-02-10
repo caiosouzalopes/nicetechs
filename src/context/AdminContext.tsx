@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { Product } from "@/data/products";
 import type { AnalyticsData } from "@/lib/admin-store";
+import { ADMIN_PASSWORD } from "@/lib/auth";
 import {
   getProducts as getStoredProducts,
   getAnalytics,
@@ -20,6 +21,25 @@ import {
   removeProduct as storeRemoveProduct,
   resetToDefaults as storeResetToDefaults,
 } from "@/lib/admin-store";
+
+async function syncProductsToCloud(products: Product[]): Promise<void> {
+  try {
+    const res = await fetch("/api/stock", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Password": ADMIN_PASSWORD,
+      },
+      body: JSON.stringify({ products }),
+    });
+    if (res.status === 503) {
+      const data = await res.json().catch(() => ({}));
+      console.warn("Estoque salvo localmente. Para sincronizar em todos os dispositivos:", data?.error);
+    }
+  } catch {
+    /* offline ou erro de rede */
+  }
+}
 
 type AdminContextType = {
   products: Product[];
@@ -42,7 +62,24 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [analytics, setAnalytics] = useState<AnalyticsData>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshProducts = useCallback(() => {
+  const refreshProducts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/stock");
+      if (res.status === 204) {
+        setProducts(getStoredProducts());
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setProducts(data);
+          setStoredProducts(data);
+          return;
+        }
+      }
+    } catch {
+      /* fallback local */
+    }
     setProducts(getStoredProducts());
   }, []);
 
@@ -51,30 +88,62 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refreshProducts();
-    refreshAnalytics();
-    setIsLoading(false);
-  }, [refreshProducts, refreshAnalytics]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/stock");
+        if (cancelled) return;
+        if (res.status === 204) {
+          setProducts(getStoredProducts());
+          setAnalytics(getAnalytics());
+          setIsLoading(false);
+          return;
+        }
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setProducts(data);
+            setStoredProducts(data);
+            setAnalytics(getAnalytics());
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch {
+        if (cancelled) return;
+      }
+      setProducts(getStoredProducts());
+      setAnalytics(getAnalytics());
+      setIsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const updateProduct = useCallback((id: string, updates: Partial<Product>) => {
     const updated = storeUpdateProduct(id, updates);
     setProducts(updated);
     setAnalytics(getAnalytics());
+    syncProductsToCloud(updated);
   }, []);
 
   const addProduct = useCallback((product: Product) => {
     const updated = storeAddProduct(product);
     setProducts(updated);
+    syncProductsToCloud(updated);
   }, []);
 
   const removeProduct = useCallback((id: string) => {
     const updated = storeRemoveProduct(id);
     setProducts(updated);
+    syncProductsToCloud(updated);
   }, []);
 
   const resetToDefaults = useCallback(() => {
     const updated = storeResetToDefaults();
     setProducts(updated);
+    syncProductsToCloud(updated);
   }, []);
 
   const trackView = useCallback((productId: string) => {

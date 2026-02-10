@@ -6,8 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Lock, LogIn } from "lucide-react";
 import Image from "next/image";
-
-const ADMIN_PASSWORD = "Nct0103@";
+import { ADMIN_PASSWORD } from "@/lib/auth";
 
 export default function AdminLoginPage() {
   const router = useRouter();
