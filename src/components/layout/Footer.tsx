@@ -3,8 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { MessageCircle, Mail, MapPin, Instagram, Facebook } from "lucide-react";
+import { MessageCircle, Mail, MapPin, Instagram } from "lucide-react";
 import { ParticleBackground } from "@/components/ParticleBackground";
+import { INSTAGRAM_URL, getWhatsAppUrl } from "@/data/products";
 
 const links = [
   { href: "/", label: "Home" },
@@ -13,8 +14,8 @@ const links = [
 ];
 
 const social = [
-  { href: "#", icon: Instagram, label: "Instagram" },
-  { href: "#", icon: Facebook, label: "Facebook" },
+  { href: INSTAGRAM_URL, icon: Instagram, label: "Instagram" },
+  { href: getWhatsAppUrl("Olá, vim pelo site Nicetech Solutions."), icon: MessageCircle, label: "WhatsApp" },
 ];
 
 export function Footer() {
@@ -59,7 +60,7 @@ export function Footer() {
               manutenção de computadores, limpeza e ventilação correta. Atendimento via WhatsApp.
             </p>
             <a
-              href="https://wa.me/5517991940047?text=Olá%2C%20vim%20pelo%20site%20Nicetech%20Solutions."
+              href={getWhatsAppUrl("Olá, vim pelo site Nicetech Solutions.")}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#25D366]/15 border border-[#25D366]/30 text-[#25D366] font-semibold hover:bg-[#25D366]/25 hover:shadow-glow-sm transition-all"

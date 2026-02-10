@@ -107,6 +107,7 @@ export const products: Product[] = [
 ];
 
 export const WHATSAPP_NUMBER = "5517991940047";
+export const INSTAGRAM_URL = "https://www.instagram.com/nicetechsolutions/";
 
 export function getWhatsAppProductMessage(productName: string): string {
   return `Olá, tenho interesse no produto *${productName}* do site Nicetech Solutions.`;

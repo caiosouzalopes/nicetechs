@@ -4,10 +4,9 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { INSTAGRAM_URL } from "@/data/products";
 
 const INSTAGRAM_PHOTOS = ["/PC1.jpeg", "/PC2.jpeg", "/PC3.jpeg", "/PC4.jpeg"];
-
-const INSTAGRAM_URL = "https://www.instagram.com/nicetechsolutions/";
 
 export function InstagramSection() {
   return (

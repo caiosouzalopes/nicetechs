@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, Package, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ParticleBackground } from "@/components/ParticleBackground";
+import { useProducts } from "@/context/ProductsContext";
+import { getWhatsAppUrl } from "@/data/products";
 
 const heroSlides = [
   { image: "/PC1.jpeg", title: "PCs Gamer", subtitle: "Venda e compra com performance máxima" },
@@ -16,14 +18,15 @@ const heroSlides = [
   { image: "/PC4.jpeg", title: "PS5 e Video Games", subtitle: "PlayStation, Xbox, Nintendo e jogos" },
 ];
 
-const stats = [
-  { value: "12+", label: "Produtos em catálogo" },
-  { value: "100%", label: "Atendimento via WhatsApp" },
-  { value: "Garantia", label: "Em todos os produtos" },
-];
-
 export function HeroSection() {
+  const { products } = useProducts();
   const [current, setCurrent] = useState(0);
+
+  const stats = [
+    { value: `${products.length}`, label: "Produtos no estoque" },
+    { value: "100%", label: "Atendimento via WhatsApp" },
+    { value: "Garantia", label: "Em todos os produtos" },
+  ];
 
   useEffect(() => {
     const t = setInterval(() => setCurrent((c) => (c + 1) % heroSlides.length), 5000);
@@ -150,7 +153,7 @@ export function HeroSection() {
             className="rounded-xl px-8 h-12 text-base font-semibold"
           >
             <a
-              href="https://wa.me/5517991940047?text=Olá%2C%20vim%20pelo%20site%20Nicetech%20Solutions."
+              href={getWhatsAppUrl("Olá, vim pelo site Nicetech Solutions.")}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2"
