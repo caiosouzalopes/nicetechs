@@ -29,13 +29,18 @@ async function fetchFromJsonBin(): Promise<Product[] | null> {
   }
 }
 
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate",
+  Pragma: "no-cache",
+};
+
 export async function GET() {
   const products = await fetchFromJsonBin();
   // Sem JSONBin configurado: 204 = use localStorage no cliente (mantém edições por dispositivo)
   if (products == null) {
-    return new NextResponse(null, { status: 204 });
+    return new NextResponse(null, { status: 204, headers: NO_CACHE_HEADERS });
   }
-  return NextResponse.json(products);
+  return NextResponse.json(products, { headers: NO_CACHE_HEADERS });
 }
 
 export async function POST(request: NextRequest) {

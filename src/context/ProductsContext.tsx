@@ -2,9 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { Product } from "@/data/products";
-import { products as defaultProducts } from "@/data/products";
 import {
-  getProducts as getStoredProducts,
+  getProducts as getProductsFromStore,
   setStoredProducts,
   trackView as storeTrackView,
   trackClick as storeTrackClick,
@@ -26,9 +25,9 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProducts = useCallback(async () => {
     try {
-      const res = await fetch("/api/stock");
+      const res = await fetch("/api/stock", { cache: "no-store" });
       if (res.status === 204) {
-        setProducts(getStoredProducts());
+        setProducts(getProductsFromStore());
         return;
       }
       if (res.ok) {
@@ -42,17 +41,17 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* fallback local */
     }
-    setProducts(getStoredProducts());
+    setProducts(getProductsFromStore());
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/stock");
+        const res = await fetch("/api/stock", { cache: "no-store" });
         if (cancelled) return;
         if (res.status === 204) {
-          setProducts(getStoredProducts());
+          setProducts(getProductsFromStore());
           setIsLoading(false);
           return;
         }
@@ -68,13 +67,20 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       } catch {
         if (cancelled) return;
       }
-      setProducts(getStoredProducts());
+      setProducts(getProductsFromStore());
       setIsLoading(false);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // Escuta quando o admin atualiza o estoque (mesma aba ou outra)
+  useEffect(() => {
+    const handler = () => refreshProducts();
+    window.addEventListener("nicetech-stock-updated", handler);
+    return () => window.removeEventListener("nicetech-stock-updated", handler);
+  }, [refreshProducts]);
 
   const trackView = useCallback((productId: string) => {
     storeTrackView(productId);

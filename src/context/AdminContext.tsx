@@ -11,7 +11,7 @@ import type { Product } from "@/data/products";
 import type { AnalyticsData } from "@/lib/admin-store";
 import { ADMIN_PASSWORD } from "@/lib/auth";
 import {
-  getProducts as getStoredProducts,
+  getProducts as getProductsFromStore,
   getAnalytics,
   setStoredProducts,
   trackView as storeTrackView,
@@ -22,6 +22,8 @@ import {
   resetToDefaults as storeResetToDefaults,
 } from "@/lib/admin-store";
 
+const STOCK_UPDATED_EVENT = "nicetech-stock-updated";
+
 async function syncProductsToCloud(products: Product[]): Promise<void> {
   try {
     const res = await fetch("/api/stock", {
@@ -31,10 +33,21 @@ async function syncProductsToCloud(products: Product[]): Promise<void> {
         "X-Admin-Password": ADMIN_PASSWORD,
       },
       body: JSON.stringify({ products }),
+      cache: "no-store",
     });
-    if (res.status === 503) {
+    if (res.ok) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(STOCK_UPDATED_EVENT));
+      }
+      const data = await res.json().catch(() => ({}));
+      if (data?.binId) {
+        console.info("JSONBin:", data.message ?? "Bin criado. Adicione JSONBIN_BIN_ID ao .env");
+      }
+    } else if (res.status === 503) {
       const data = await res.json().catch(() => ({}));
       console.warn("Estoque salvo localmente. Para sincronizar em todos os dispositivos:", data?.error);
+    } else if (res.status === 401) {
+      console.warn("Senha do admin incorreta. Verifique ADMIN_PASSWORD / NEXT_PUBLIC_ADMIN_PASSWORD.");
     }
   } catch {
     /* offline ou erro de rede */
@@ -64,9 +77,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProducts = useCallback(async () => {
     try {
-      const res = await fetch("/api/stock");
+      const res = await fetch("/api/stock", { cache: "no-store" });
       if (res.status === 204) {
-        setProducts(getStoredProducts());
+        setProducts(getProductsFromStore());
         return;
       }
       if (res.ok) {
@@ -80,7 +93,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* fallback local */
     }
-    setProducts(getStoredProducts());
+    setProducts(getProductsFromStore());
   }, []);
 
   const refreshAnalytics = useCallback(() => {
@@ -91,10 +104,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/stock");
+        const res = await fetch("/api/stock", { cache: "no-store" });
         if (cancelled) return;
         if (res.status === 204) {
-          setProducts(getStoredProducts());
+          setProducts(getProductsFromStore());
           setAnalytics(getAnalytics());
           setIsLoading(false);
           return;
@@ -112,7 +125,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       } catch {
         if (cancelled) return;
       }
-      setProducts(getStoredProducts());
+      setProducts(getProductsFromStore());
       setAnalytics(getAnalytics());
       setIsLoading(false);
     })();
