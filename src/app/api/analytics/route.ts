@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
+import { createSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
 const NO_CACHE = { "Cache-Control": "no-store, no-cache", Pragma: "no-cache" };
 
@@ -8,7 +8,7 @@ export async function GET() {
     return new NextResponse(null, { status: 204, headers: NO_CACHE });
   }
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = createSupabaseAdmin();
     const { data, error } = await supabase
       .from("product_analytics")
       .select("product_id, views, clicks");

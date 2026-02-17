@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Product } from "@/data/products";
 import { products as defaultProducts } from "@/data/products";
-import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
+import { createSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
 const ADMIN_PASSWORD =
   process.env.ADMIN_PASSWORD ||
@@ -15,10 +15,21 @@ function isAdminAuthorized(request: NextRequest): boolean {
   return !!auth && auth === ADMIN_PASSWORD;
 }
 
+const SUPABASE_KEY_HINT =
+  "Chave Supabase inválida. Local: pare o servidor (Ctrl+C), confira o .env e rode 'npm run dev' de novo. Vercel: em Settings → Environment Variables defina SUPABASE_SERVICE_ROLE_KEY e NEXT_PUBLIC_SUPABASE_ANON_KEY (chaves eyJ...) e faça redeploy.";
+
+function buildSupabaseErrorMsg(supabaseMessage: string | undefined, fallback: string): string {
+  const m = (supabaseMessage ?? "").toLowerCase();
+  if (m.includes("invalid api key") || m.includes("invalid") && m.includes("key")) {
+    return SUPABASE_KEY_HINT;
+  }
+  return supabaseMessage ?? fallback;
+}
+
 async function fetchFromSupabase(): Promise<Product[] | null> {
   if (!isSupabaseConfigured()) return null;
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = createSupabaseAdmin();
     const { data, error } = await supabase
       .from("products")
       .select("id, name, description, image, price, category")
@@ -93,10 +104,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 1. Tentar Supabase
+  // 1. Tentar Supabase (cliente criado na hora com env atual e trim)
   if (isSupabaseConfigured()) {
     try {
-      const supabase = getSupabaseAdmin();
+      const supabase = createSupabaseAdmin();
       const { data: existing } = await supabase.from("products").select("id");
       const existingIds = (existing ?? []).map((r) => r.id);
       const newIds = new Set(products.map((p) => p.id));
@@ -107,10 +118,7 @@ export async function POST(request: NextRequest) {
           .delete()
           .in("id", toDelete);
         if (delErr) {
-          const msg =
-            delErr.message?.toLowerCase().includes("invalid api key")
-              ? "Chave da API Supabase inválida. Em Supabase: Settings → API copie a 'anon' e a 'service_role' (formato eyJ...)."
-              : delErr.message || "Erro ao remover produtos.";
+          const msg = buildSupabaseErrorMsg(delErr.message, "Erro ao remover produtos.");
           return NextResponse.json({ error: msg }, { status: 502 });
         }
       }
@@ -128,10 +136,7 @@ export async function POST(request: NextRequest) {
           ignoreDuplicates: false,
         });
         if (insErr) {
-          const msg =
-            insErr.message?.toLowerCase().includes("invalid api key")
-              ? "Chave da API Supabase inválida. Em Supabase: Settings → API copie a 'anon' e a 'service_role' (formato eyJ...)."
-              : insErr.message || "Erro ao salvar produtos.";
+          const msg = buildSupabaseErrorMsg(insErr.message, "Erro ao salvar produtos.");
           return NextResponse.json({ error: msg }, { status: 502 });
         }
       }
