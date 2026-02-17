@@ -51,7 +51,9 @@ async function syncProductsToCloud(
       onResult(false, "Senha do admin incorreta. Verifique .env.");
     } else {
       const data = await res.json().catch(() => ({}));
-      onResult(false, data?.error ?? `Erro ao salvar (${res.status})`);
+      let msg = data?.error ?? `Erro ao salvar (${res.status})`;
+      if (data?.detail) msg += ` [${data.detail}]`;
+      onResult(false, msg);
     }
   } catch {
     onResult(false, "Erro de rede. Verifique a conexão e tente novamente.");

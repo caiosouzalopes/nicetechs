@@ -1,17 +1,33 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
+function getEnvDebug() {
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "").trim();
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  return {
+    hasUrl: url.length > 0,
+    hasServiceKey: key.length > 0,
+    urlPrefix: url ? url.slice(0, 30) + "..." : "",
+    keyStartsWithEyJ: key.startsWith("eyJ"),
+  };
+}
+
 /**
- * GET /api/supabase-check - Testa se o servidor consegue falar com o Supabase.
- * Use para conferir se o .env está sendo lido (reinicie o servidor após mudar .env).
+ * GET /api/supabase-check - Testa conexão com Supabase.
+ * Use ?debug=1 para ver se as variáveis estão definidas.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const debug = url.searchParams.get("debug") === "1";
+
   if (!isSupabaseConfigured()) {
+    const debugInfo = debug ? getEnvDebug() : undefined;
     return NextResponse.json(
       {
         ok: false,
         error:
-          "SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY não definidas. Local: confira o .env e reinicie o servidor. Vercel: defina as variáveis em Settings → Environment Variables.",
+          "Variáveis não definidas. No Vercel: defina NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (chave = texto eyJ... sem aspas). Depois: Redeploy.",
+        ...(debugInfo && { debug: debugInfo }),
       },
       { status: 503 }
     );
@@ -20,20 +36,24 @@ export async function GET() {
     const supabase = createSupabaseAdmin();
     const { data, error } = await supabase.from("products").select("id").limit(1);
     if (error) {
-      const hint =
-        error.message?.toLowerCase().includes("invalid") && error.message?.toLowerCase().includes("key")
-          ? "Chave inválida. Local: .env com chaves eyJ... e reinicie (npm run dev). Vercel: defina as variáveis no dashboard e redeploy."
-          : error.message;
+      const debugInfo = debug ? getEnvDebug() : undefined;
       return NextResponse.json(
-        { ok: false, error: hint },
+        {
+          ok: false,
+          error: "Erro Supabase. Veja 'detail'. Use ?debug=1 para diagnóstico.",
+          detail: error.message,
+          code: error.code,
+          ...(debugInfo && { debug: debugInfo }),
+        },
         { status: 502 }
       );
     }
     return NextResponse.json({ ok: true, productsSample: Array.isArray(data) ? data.length : 0 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    const debugInfo = debug ? getEnvDebug() : undefined;
     return NextResponse.json(
-      { ok: false, error: msg },
+      { ok: false, error: msg, ...(debugInfo && { debug: debugInfo }) },
       { status: 502 }
     );
   }

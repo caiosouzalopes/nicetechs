@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
           .in("id", toDelete);
         if (delErr) {
           const msg = buildSupabaseErrorMsg(delErr.message, "Erro ao remover produtos.");
-          return NextResponse.json({ error: msg }, { status: 502 });
+          return NextResponse.json({ error: msg, detail: delErr.message }, { status: 502 });
         }
       }
       if (products.length > 0) {
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
         });
         if (insErr) {
           const msg = buildSupabaseErrorMsg(insErr.message, "Erro ao salvar produtos.");
-          return NextResponse.json({ error: msg }, { status: 502 });
+          return NextResponse.json({ error: msg, detail: insErr.message }, { status: 502 });
         }
       }
       return NextResponse.json({ success: true });
