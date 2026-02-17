@@ -107,10 +107,11 @@ export async function POST(request: NextRequest) {
           .delete()
           .in("id", toDelete);
         if (delErr) {
-          return NextResponse.json(
-            { error: delErr.message || "Erro ao remover produtos." },
-            { status: 502 }
-          );
+          const msg =
+            delErr.message?.toLowerCase().includes("invalid api key")
+              ? "Chave da API Supabase inválida. Em Supabase: Settings → API copie a 'anon' e a 'service_role' (formato eyJ...)."
+              : delErr.message || "Erro ao remover produtos.";
+          return NextResponse.json({ error: msg }, { status: 502 });
         }
       }
       if (products.length > 0) {
@@ -127,10 +128,11 @@ export async function POST(request: NextRequest) {
           ignoreDuplicates: false,
         });
         if (insErr) {
-          return NextResponse.json(
-            { error: insErr.message || "Erro ao salvar produtos." },
-            { status: 502 }
-          );
+          const msg =
+            insErr.message?.toLowerCase().includes("invalid api key")
+              ? "Chave da API Supabase inválida. Em Supabase: Settings → API copie a 'anon' e a 'service_role' (formato eyJ...)."
+              : insErr.message || "Erro ao salvar produtos.";
+          return NextResponse.json({ error: msg }, { status: 502 });
         }
       }
       return NextResponse.json({ success: true });
