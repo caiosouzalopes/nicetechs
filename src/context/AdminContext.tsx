@@ -96,7 +96,23 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setProducts(getProductsFromStore());
   }, []);
 
-  const refreshAnalytics = useCallback(() => {
+  const refreshAnalytics = useCallback(async () => {
+    try {
+      const res = await fetch("/api/analytics", { cache: "no-store" });
+      if (res.status === 204) {
+        setAnalytics(getAnalytics());
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data === "object" && !Array.isArray(data)) {
+          setAnalytics(data);
+          return;
+        }
+      }
+    } catch {
+      /* fallback */
+    }
     setAnalytics(getAnalytics());
   }, []);
 
@@ -108,7 +124,15 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         if (res.status === 204) {
           setProducts(getProductsFromStore());
-          setAnalytics(getAnalytics());
+          const ar = await fetch("/api/analytics", { cache: "no-store" });
+          if (!cancelled) {
+            if (ar.status === 204) setAnalytics(getAnalytics());
+            else if (ar.ok) {
+              const a = await ar.json().catch(() => null);
+              if (a && typeof a === "object") setAnalytics(a);
+              else setAnalytics(getAnalytics());
+            } else setAnalytics(getAnalytics());
+          }
           setIsLoading(false);
           return;
         }
@@ -117,7 +141,15 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           if (Array.isArray(data)) {
             setProducts(data);
             setStoredProducts(data);
-            setAnalytics(getAnalytics());
+            const ar = await fetch("/api/analytics", { cache: "no-store" });
+            if (!cancelled) {
+              if (ar.status === 204) setAnalytics(getAnalytics());
+              else if (ar.ok) {
+                const a = await ar.json().catch(() => null);
+                if (a && typeof a === "object") setAnalytics(a);
+                else setAnalytics(getAnalytics());
+              } else setAnalytics(getAnalytics());
+            }
             setIsLoading(false);
             return;
           }
@@ -159,15 +191,33 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     syncProductsToCloud(updated);
   }, []);
 
-  const trackView = useCallback((productId: string) => {
+  const trackView = useCallback(async (productId: string) => {
     storeTrackView(productId);
-    setAnalytics(getAnalytics());
-  }, []);
+    try {
+      await fetch("/api/analytics/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, type: "view" }),
+      });
+      refreshAnalytics();
+    } catch {
+      setAnalytics(getAnalytics());
+    }
+  }, [refreshAnalytics]);
 
-  const trackClick = useCallback((productId: string) => {
+  const trackClick = useCallback(async (productId: string) => {
     storeTrackClick(productId);
-    setAnalytics(getAnalytics());
-  }, []);
+    try {
+      await fetch("/api/analytics/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, type: "click" }),
+      });
+      refreshAnalytics();
+    } catch {
+      setAnalytics(getAnalytics());
+    }
+  }, [refreshAnalytics]);
 
   return (
     <AdminContext.Provider

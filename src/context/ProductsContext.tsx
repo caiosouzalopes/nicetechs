@@ -84,10 +84,20 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
 
   const trackView = useCallback((productId: string) => {
     storeTrackView(productId);
+    fetch("/api/analytics/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId, type: "view" }),
+    }).catch(() => {});
   }, []);
 
   const trackClick = useCallback((productId: string) => {
     storeTrackClick(productId);
+    fetch("/api/analytics/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId, type: "click" }),
+    }).catch(() => {});
   }, []);
 
   return (
