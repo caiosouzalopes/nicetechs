@@ -15,15 +15,15 @@ import {
   setStoredProducts,
   trackView as storeTrackView,
   trackClick as storeTrackClick,
-  updateProduct as storeUpdateProduct,
-  addProduct as storeAddProduct,
-  removeProduct as storeRemoveProduct,
   resetToDefaults as storeResetToDefaults,
 } from "@/lib/admin-store";
 
 const STOCK_UPDATED_EVENT = "nicetech-stock-updated";
 
-async function syncProductsToCloud(products: Product[]): Promise<void> {
+async function syncProductsToCloud(
+  products: Product[],
+  onFailure?: () => void
+): Promise<void> {
   try {
     const res = await fetch("/api/stock", {
       method: "POST",
@@ -47,9 +47,14 @@ async function syncProductsToCloud(products: Product[]): Promise<void> {
       console.warn("Estoque salvo localmente. Para sincronizar em todos os dispositivos:", data?.error);
     } else if (res.status === 401) {
       console.warn("Senha do admin incorreta. Verifique ADMIN_PASSWORD / NEXT_PUBLIC_ADMIN_PASSWORD.");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      console.warn("Falha ao salvar no banco:", data?.error ?? res.status);
+      onFailure?.();
     }
   } catch {
     /* offline ou erro de rede */
+    onFailure?.();
   }
 }
 
@@ -169,24 +174,45 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const updateProduct = useCallback((id: string, updates: Partial<Product>) => {
-    const updated = storeUpdateProduct(id, updates);
-    setProducts(updated);
-    setAnalytics(getAnalytics());
-    syncProductsToCloud(updated);
-  }, []);
+  const updateProduct = useCallback(
+    (id: string, updates: Partial<Product>) => {
+      setProducts((prev) => {
+        const idx = prev.findIndex((p) => p.id === id);
+        if (idx === -1) return prev;
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], ...updates };
+        setStoredProducts(updated);
+        setAnalytics(getAnalytics());
+        syncProductsToCloud(updated, refreshProducts);
+        return updated;
+      });
+    },
+    [refreshProducts]
+  );
 
-  const addProduct = useCallback((product: Product) => {
-    const updated = storeAddProduct(product);
-    setProducts(updated);
-    syncProductsToCloud(updated);
-  }, []);
+  const addProduct = useCallback(
+    (product: Product) => {
+      setProducts((prev) => {
+        const updated = [...prev, product];
+        setStoredProducts(updated);
+        syncProductsToCloud(updated, refreshProducts);
+        return updated;
+      });
+    },
+    [refreshProducts]
+  );
 
-  const removeProduct = useCallback((id: string) => {
-    const updated = storeRemoveProduct(id);
-    setProducts(updated);
-    syncProductsToCloud(updated);
-  }, []);
+  const removeProduct = useCallback(
+    (id: string) => {
+      setProducts((prev) => {
+        const updated = prev.filter((p) => p.id !== id);
+        setStoredProducts(updated);
+        syncProductsToCloud(updated, refreshProducts);
+        return updated;
+      });
+    },
+    [refreshProducts]
+  );
 
   const resetToDefaults = useCallback(() => {
     const updated = storeResetToDefaults();
