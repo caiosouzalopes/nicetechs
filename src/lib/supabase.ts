@@ -1,6 +1,14 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { Product } from "@/data/products";
 
+/**
+ * Variáveis de ambiente usadas:
+ * - NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_URL (URL do projeto)
+ * - NEXT_PUBLIC_SUPABASE_ANON_KEY ou SUPABASE_ANON_KEY (chave Public/anon)
+ * - SUPABASE_SERVICE_ROLE_KEY (chave Secret/service_role)
+ * No Vercel: defina as três no Environment Variables e faça Redeploy.
+ */
+
 function trimEnv(s: string | undefined): string {
   return (s ?? "").trim();
 }
