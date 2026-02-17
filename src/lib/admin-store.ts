@@ -29,7 +29,7 @@ export function setStoredProducts(products: Product[]): void {
 
 export function getProducts(): Product[] {
   const stored = getStoredProducts();
-  return stored ?? [...defaultProducts];
+  return stored ?? [];
 }
 
 export function getAnalytics(): AnalyticsData {

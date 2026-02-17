@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { Product } from "@/data/products";
 import {
-  getProducts as getProductsFromStore,
   setStoredProducts,
   trackView as storeTrackView,
   trackClick as storeTrackClick,
@@ -27,7 +26,8 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch("/api/stock", { cache: "no-store" });
       if (res.status === 204) {
-        setProducts(getProductsFromStore());
+        setProducts([]);
+        setStoredProducts([]);
         return;
       }
       if (res.ok) {
@@ -39,9 +39,10 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch {
-      /* fallback local */
+      /* sem cache: mostra vazio */
     }
-    setProducts(getProductsFromStore());
+    setProducts([]);
+    setStoredProducts([]);
   }, []);
 
   useEffect(() => {
@@ -51,7 +52,8 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch("/api/stock", { cache: "no-store" });
         if (cancelled) return;
         if (res.status === 204) {
-          setProducts(getProductsFromStore());
+          setProducts([]);
+          setStoredProducts([]);
           setIsLoading(false);
           return;
         }
@@ -67,7 +69,8 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       } catch {
         if (cancelled) return;
       }
-      setProducts(getProductsFromStore());
+      setProducts([]);
+      setStoredProducts([]);
       setIsLoading(false);
     })();
     return () => {

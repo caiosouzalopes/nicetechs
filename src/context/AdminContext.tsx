@@ -11,7 +11,6 @@ import type { Product } from "@/data/products";
 import type { AnalyticsData } from "@/lib/admin-store";
 import { ADMIN_PASSWORD } from "@/lib/auth";
 import {
-  getProducts as getProductsFromStore,
   getAnalytics,
   setStoredProducts,
   trackView as storeTrackView,
@@ -79,7 +78,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch("/api/stock", { cache: "no-store" });
       if (res.status === 204) {
-        setProducts(getProductsFromStore());
+        setProducts([]);
+        setStoredProducts([]);
         return;
       }
       if (res.ok) {
@@ -91,9 +91,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch {
-      /* fallback local */
+      /* sem cache */
     }
-    setProducts(getProductsFromStore());
+    setProducts([]);
+    setStoredProducts([]);
   }, []);
 
   const refreshAnalytics = useCallback(async () => {
@@ -123,7 +124,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch("/api/stock", { cache: "no-store" });
         if (cancelled) return;
         if (res.status === 204) {
-          setProducts(getProductsFromStore());
+          setProducts([]);
+          setStoredProducts([]);
           const ar = await fetch("/api/analytics", { cache: "no-store" });
           if (!cancelled) {
             if (ar.status === 204) setAnalytics(getAnalytics());
@@ -157,7 +159,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       } catch {
         if (cancelled) return;
       }
-      setProducts(getProductsFromStore());
+      setProducts([]);
+      setStoredProducts([]);
       setAnalytics(getAnalytics());
       setIsLoading(false);
     })();
