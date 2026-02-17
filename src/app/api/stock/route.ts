@@ -3,7 +3,10 @@ import type { Product } from "@/data/products";
 import { products as defaultProducts } from "@/data/products";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Nct0103@";
+const ADMIN_PASSWORD =
+  process.env.ADMIN_PASSWORD ||
+  process.env.NEXT_PUBLIC_ADMIN_PASSWORD ||
+  "Nct0103@";
 
 function isAdminAuthorized(request: NextRequest): boolean {
   const auth =

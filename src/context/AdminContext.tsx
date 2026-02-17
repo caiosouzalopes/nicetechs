@@ -22,7 +22,7 @@ const STOCK_UPDATED_EVENT = "nicetech-stock-updated";
 
 async function syncProductsToCloud(
   products: Product[],
-  onFailure?: () => void
+  onResult: (ok: boolean, errorMessage?: string) => void
 ): Promise<void> {
   try {
     const res = await fetch("/api/stock", {
@@ -42,19 +42,19 @@ async function syncProductsToCloud(
       if (data?.binId) {
         console.info("JSONBin:", data.message ?? "Bin criado. Adicione JSONBIN_BIN_ID ao .env");
       }
+      onResult(true);
     } else if (res.status === 503) {
       const data = await res.json().catch(() => ({}));
-      console.warn("Estoque salvo localmente. Para sincronizar em todos os dispositivos:", data?.error);
+      const msg = data?.error ?? "Configure SUPABASE ou JSONBIN no .env.";
+      onResult(false, msg);
     } else if (res.status === 401) {
-      console.warn("Senha do admin incorreta. Verifique ADMIN_PASSWORD / NEXT_PUBLIC_ADMIN_PASSWORD.");
+      onResult(false, "Senha do admin incorreta. Verifique .env.");
     } else {
       const data = await res.json().catch(() => ({}));
-      console.warn("Falha ao salvar no banco:", data?.error ?? res.status);
-      onFailure?.();
+      onResult(false, data?.error ?? `Erro ao salvar (${res.status})`);
     }
   } catch {
-    /* offline ou erro de rede */
-    onFailure?.();
+    onResult(false, "Erro de rede. Verifique a conexão e tente novamente.");
   }
 }
 
@@ -62,6 +62,8 @@ type AdminContextType = {
   products: Product[];
   analytics: AnalyticsData;
   isLoading: boolean;
+  saveError: string | null;
+  clearSaveError: () => void;
   refreshProducts: () => void;
   refreshAnalytics: () => void;
   updateProduct: (id: string, updates: Partial<Product>) => void;
@@ -78,6 +80,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const clearSaveError = useCallback(() => setSaveError(null), []);
 
   const refreshProducts = useCallback(async () => {
     try {
@@ -174,50 +179,54 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const updateProduct = useCallback(
-    (id: string, updates: Partial<Product>) => {
-      setProducts((prev) => {
-        const idx = prev.findIndex((p) => p.id === id);
-        if (idx === -1) return prev;
-        const updated = [...prev];
-        updated[idx] = { ...updated[idx], ...updates };
-        setStoredProducts(updated);
-        setAnalytics(getAnalytics());
-        syncProductsToCloud(updated, refreshProducts);
-        return updated;
+  const updateProduct = useCallback((id: string, updates: Partial<Product>) => {
+    setProducts((prev) => {
+      const idx = prev.findIndex((p) => p.id === id);
+      if (idx === -1) return prev;
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], ...updates };
+      setStoredProducts(updated);
+      setAnalytics(getAnalytics());
+      syncProductsToCloud(updated, (ok, msg) => {
+        if (ok) setSaveError(null);
+        else setSaveError(msg ?? "Erro ao salvar.");
       });
-    },
-    [refreshProducts]
-  );
+      return updated;
+    });
+  }, []);
 
-  const addProduct = useCallback(
-    (product: Product) => {
-      setProducts((prev) => {
-        const updated = [...prev, product];
-        setStoredProducts(updated);
-        syncProductsToCloud(updated, refreshProducts);
-        return updated;
+  const addProduct = useCallback((product: Product) => {
+    setProducts((prev) => {
+      const updated = [...prev, product];
+      setStoredProducts(updated);
+      syncProductsToCloud(updated, (ok, msg) => {
+        if (ok) setSaveError(null);
+        else setSaveError(msg ?? "Erro ao salvar.");
       });
-    },
-    [refreshProducts]
-  );
+      return updated;
+    });
+  }, []);
 
-  const removeProduct = useCallback(
-    (id: string) => {
-      setProducts((prev) => {
-        const updated = prev.filter((p) => p.id !== id);
-        setStoredProducts(updated);
-        syncProductsToCloud(updated, refreshProducts);
-        return updated;
+  const removeProduct = useCallback((id: string) => {
+    setProducts((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      setStoredProducts(updated);
+      syncProductsToCloud(updated, (ok, msg) => {
+        if (ok) setSaveError(null);
+        else setSaveError(msg ?? "Erro ao salvar.");
       });
-    },
-    [refreshProducts]
-  );
+      return updated;
+    });
+  }, []);
 
   const resetToDefaults = useCallback(() => {
     const updated = storeResetToDefaults();
     setProducts(updated);
-    syncProductsToCloud(updated);
+    setSaveError(null);
+    syncProductsToCloud(updated, (ok, msg) => {
+      if (ok) setSaveError(null);
+      else setSaveError(msg ?? "Erro ao salvar.");
+    });
   }, []);
 
   const trackView = useCallback(async (productId: string) => {
@@ -254,6 +263,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         products,
         analytics,
         isLoading,
+        saveError,
+        clearSaveError,
         refreshProducts,
         refreshAnalytics,
         updateProduct,

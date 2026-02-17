@@ -12,14 +12,25 @@ import {
   Eye,
   MousePointer,
   Plus,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { ImagePicker } from "@/components/admin/ImagePicker";
 
 const CATEGORIES: Product["category"][] = ["gamer", "smartphone", "games", "accessories"];
 
 export default function AdminProductsPage() {
-  const { products, analytics, updateProduct, addProduct, removeProduct, resetToDefaults } =
-    useAdmin();
+  const {
+    products,
+    analytics,
+    saveError,
+    clearSaveError,
+    refreshProducts,
+    updateProduct,
+    addProduct,
+    removeProduct,
+    resetToDefaults,
+  } = useAdmin();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -32,6 +43,40 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-8">
+      <AnimatePresence>
+        {saveError && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="rounded-xl border border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300 px-4 py-3 flex flex-wrap items-center gap-3"
+          >
+            <AlertCircle className="shrink-0 size-5" />
+            <span className="flex-1 text-sm">{saveError}</span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  clearSaveError();
+                  refreshProducts();
+                }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-sm font-medium hover:bg-red-500/30 transition-colors"
+              >
+                <RefreshCw size={14} />
+                Atualizar do servidor
+              </button>
+              <button
+                type="button"
+                onClick={clearSaveError}
+                className="px-3 py-1.5 rounded-lg border border-border text-sm hover:bg-primary/10 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
