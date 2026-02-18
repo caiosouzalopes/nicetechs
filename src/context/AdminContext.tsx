@@ -55,8 +55,12 @@ async function syncProductsToCloud(
       if (data?.detail) msg += ` [${data.detail}]`;
       onResult(false, msg);
     }
-  } catch {
-    onResult(false, "Erro de rede. Verifique a conexão e tente novamente.");
+  } catch (err) {
+    const msg =
+      err instanceof Error && err.message?.toLowerCase().includes("fetch")
+        ? "Não foi possível conectar ao servidor. Verifique se o site está no ar e tente novamente."
+        : "Erro de rede. Verifique a conexão e tente novamente.";
+    onResult(false, msg);
   }
 }
 
@@ -87,26 +91,35 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const clearSaveError = useCallback(() => setSaveError(null), []);
 
   const refreshProducts = useCallback(async () => {
+    setSaveError(null);
     try {
       const res = await fetch("/api/stock", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
       if (res.status === 204) {
         setProducts([]);
         setStoredProducts([]);
         return;
       }
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setProducts(data);
-          setStoredProducts(data);
-          return;
-        }
+      if (res.ok && Array.isArray(data)) {
+        setProducts(data);
+        setStoredProducts(data);
+        return;
       }
-    } catch {
-      /* sem cache */
+      if (!res.ok) {
+        const msg = data?.error ?? `Erro ao carregar (${res.status})`;
+        setSaveError(data?.detail ? `${msg} [${data.detail}]` : msg);
+      }
+      setProducts([]);
+      setStoredProducts([]);
+    } catch (err) {
+      const msg =
+        err instanceof Error && err.message?.toLowerCase().includes("fetch")
+          ? "Não foi possível conectar ao servidor. Verifique se o site está no ar e tente novamente."
+          : "Erro de rede. Verifique a conexão e tente novamente.";
+      setSaveError(msg);
+      setProducts([]);
+      setStoredProducts([]);
     }
-    setProducts([]);
-    setStoredProducts([]);
   }, []);
 
   const refreshAnalytics = useCallback(async () => {

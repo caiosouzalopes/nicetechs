@@ -80,11 +80,19 @@ const NO_CACHE_HEADERS = {
 };
 
 export async function GET() {
-  const products = await fetchProducts();
-  if (products == null) {
-    return new NextResponse(null, { status: 204, headers: NO_CACHE_HEADERS });
+  try {
+    const products = await fetchProducts();
+    if (products == null) {
+      return new NextResponse(null, { status: 204, headers: NO_CACHE_HEADERS });
+    }
+    return NextResponse.json(products, { headers: NO_CACHE_HEADERS });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Erro ao carregar estoque.";
+    return NextResponse.json(
+      { error: "Erro ao carregar estoque.", detail: msg },
+      { status: 502, headers: NO_CACHE_HEADERS }
+    );
   }
-  return NextResponse.json(products, { headers: NO_CACHE_HEADERS });
 }
 
 export async function POST(request: NextRequest) {
