@@ -1,44 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import {
-  incrementClickFromDb,
-  incrementViewFromDb,
-  isDatabaseConfigured,
-} from "@/lib/db";
-import { createSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
-  let body: { productId?: string; type?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ ok: true });
-  }
-  const productId = body?.productId;
-  const type = body?.type;
-  if (!productId || typeof productId !== "string" || !type) {
-    return NextResponse.json({ ok: true });
-  }
-  if (type !== "view" && type !== "click") {
-    return NextResponse.json({ ok: true });
-  }
-  if (isDatabaseConfigured()) {
-    const result =
-      type === "view"
-        ? await incrementViewFromDb(productId)
-        : await incrementClickFromDb(productId);
-    if (!result.error) return NextResponse.json({ ok: true });
-    return NextResponse.json({ ok: false, error: result.error }, { status: 502 });
-  }
-  if (isSupabaseConfigured()) {
-    try {
-      const supabase = createSupabaseAdmin();
-      const fn = type === "view" ? "increment_product_view" : "increment_product_click";
-      const { error } = await supabase.rpc(fn, { p_product_id: productId });
-      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 502 });
-      return NextResponse.json({ ok: true });
-    } catch {
-      return NextResponse.json({ ok: true });
-    }
-  }
+export async function POST() {
   return NextResponse.json({ ok: true });
 }
