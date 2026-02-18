@@ -65,12 +65,12 @@ async function fetchFromJsonBin(): Promise<Product[] | null> {
 }
 
 async function fetchProducts(): Promise<Product[] | null> {
+  const fromSupabase = await fetchFromSupabase();
+  if (fromSupabase != null) return fromSupabase;
   if (isDatabaseConfigured()) {
     const fromDb = await getProductsFromDb();
     return fromDb ?? [];
   }
-  const fromSupabase = await fetchFromSupabase();
-  if (fromSupabase != null) return fromSupabase;
   return fetchFromJsonBin();
 }
 
@@ -121,19 +121,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 1. Tentar apenas DATABASE_URL (Postgres direto)
-  if (isDatabaseConfigured()) {
-    const result = await syncProductsToDb(products);
-    if (!result.error) {
-      return NextResponse.json({ success: true, source: "database" }, { status: 200 });
-    }
-    return NextResponse.json(
-      { error: result.error, detail: result.error },
-      { status: 502 }
-    );
-  }
-
-  // 2. Tentar Supabase (URL + chaves)
+  // 1. Tentar Supabase (API – mesma conexão que no outro projeto; evita ENOTFOUND em db.xxx)
   if (isSupabaseConfigured()) {
     try {
       const supabase = createSupabaseAdmin();
@@ -176,6 +164,18 @@ export async function POST(request: NextRequest) {
         { status: 502 }
       );
     }
+  }
+
+  // 2. Tentar DATABASE_URL (Postgres direto)
+  if (isDatabaseConfigured()) {
+    const result = await syncProductsToDb(products);
+    if (!result.error) {
+      return NextResponse.json({ success: true, source: "database" }, { status: 200 });
+    }
+    return NextResponse.json(
+      { error: result.error, detail: result.error },
+      { status: 502 }
+    );
   }
 
   // 3. Fallback: JSONBin
