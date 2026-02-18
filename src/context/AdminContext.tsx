@@ -55,12 +55,8 @@ async function syncProductsToCloud(
       if (data?.detail) msg += ` [${data.detail}]`;
       onResult(false, msg);
     }
-  } catch (err) {
-    const msg =
-      err instanceof Error && err.message?.toLowerCase().includes("fetch")
-        ? "Não foi possível conectar ao servidor. Verifique se o site está no ar e tente novamente."
-        : "Erro de rede. Verifique a conexão e tente novamente.";
-    onResult(false, msg);
+  } catch {
+    onResult(false, "Não foi possível conectar. Verifique a conexão e tente novamente.");
   }
 }
 
@@ -111,12 +107,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       }
       setProducts([]);
       setStoredProducts([]);
-    } catch (err) {
-      const msg =
-        err instanceof Error && err.message?.toLowerCase().includes("fetch")
-          ? "Não foi possível conectar ao servidor. Verifique se o site está no ar e tente novamente."
-          : "Erro de rede. Verifique a conexão e tente novamente.";
-      setSaveError(msg);
+    } catch {
+      setSaveError("Não foi possível carregar os produtos. Tente novamente.");
       setProducts([]);
       setStoredProducts([]);
     }
@@ -183,6 +175,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         }
       } catch {
         if (cancelled) return;
+        setSaveError("Não foi possível carregar os produtos. Tente novamente.");
       }
       setProducts([]);
       setStoredProducts([]);

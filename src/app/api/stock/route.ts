@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer, isSupabaseConfigured } from "@/lib/supabase-server";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 10;
+
 const ADMIN_PASSWORD =
   process.env.ADMIN_PASSWORD ||
   process.env.NEXT_PUBLIC_ADMIN_PASSWORD ||
@@ -25,10 +28,10 @@ function normalizeCategory(c: string): (typeof CATEGORIES)[number] {
 }
 
 export async function GET() {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json([], { headers: NO_CACHE_HEADERS });
-  }
   try {
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json([], { status: 200, headers: NO_CACHE_HEADERS });
+    }
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
       .from("products")
@@ -36,61 +39,55 @@ export async function GET() {
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("[GET /api/stock] Supabase error:", error.message, error.details);
-      }
-      return NextResponse.json([], { headers: NO_CACHE_HEADERS });
+      return NextResponse.json([], { status: 200, headers: NO_CACHE_HEADERS });
     }
     const list = Array.isArray(data) ? data : [];
-    return NextResponse.json(list, { headers: NO_CACHE_HEADERS });
-  } catch (e) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[GET /api/stock]", e);
-    }
-    return NextResponse.json([], { headers: NO_CACHE_HEADERS });
+    return NextResponse.json(list, { status: 200, headers: NO_CACHE_HEADERS });
+  } catch {
+    return NextResponse.json([], { status: 200, headers: NO_CACHE_HEADERS });
   }
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthorized(request)) {
-    return NextResponse.json(
-      { error: "Não autorizado. Use a senha do painel admin." },
-      { status: 401 }
-    );
-  }
-  let body: { products?: Array<{ id?: string; name?: string; description?: string; image?: string; price?: string; category?: string }> };
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Body inválido. Envie { products: [...] }" },
-      { status: 400 }
-    );
-  }
-  const products = body?.products;
-  if (!Array.isArray(products)) {
-    return NextResponse.json(
-      { error: "Envie um array de produtos em 'products'." },
-      { status: 400 }
-    );
-  }
+    if (!isAdminAuthorized(request)) {
+      return NextResponse.json(
+        { error: "Não autorizado. Use a senha do painel admin." },
+        { status: 401 }
+      );
+    }
+    let body: { products?: unknown };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Body inválido. Envie { products: [...] }" },
+        { status: 400 }
+      );
+    }
+    const products = Array.isArray(body?.products) ? body.products : null;
+    if (!products) {
+      return NextResponse.json(
+        { error: "Envie um array de produtos em 'products'." },
+        { status: 400 }
+      );
+    }
 
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ success: true });
-  }
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
 
-  try {
     const supabase = getSupabaseServer();
     const { data: existing } = await supabase.from("products").select("id").is("deleted_at", null);
     const existingIds = (existing ?? []).map((r) => r.id);
-    const newIds = new Set(products.map((p) => p.id).filter(Boolean) as string[]);
+    const newIds = new Set(products.map((p: { id?: string }) => p.id).filter(Boolean) as string[]);
     const toDelete = existingIds.filter((id) => !newIds.has(id));
     if (toDelete.length > 0) {
       await supabase.from("products").update({ deleted_at: new Date().toISOString() }).in("id", toDelete);
     }
     if (products.length > 0) {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      const rows = products.map((p) => {
+      const rows = products.map((p: { id?: string; name?: string; description?: string; image?: string; price?: string; category?: string }) => {
         const id = (p.id && uuidRegex.test(p.id)) ? p.id : crypto.randomUUID();
         return {
           id,
@@ -106,12 +103,11 @@ export async function POST(request: NextRequest) {
         ignoreDuplicates: false,
       });
       if (upsertErr) {
-        return NextResponse.json({ error: upsertErr.message }, { status: 502 });
+        return NextResponse.json({ error: "Erro ao salvar no banco. Tente novamente." }, { status: 502 });
       }
     }
-    return NextResponse.json({ success: true });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erro ao salvar";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch {
+    return NextResponse.json({ error: "Erro ao processar. Tente novamente." }, { status: 502 });
   }
 }
