@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Product } from "@/data/products";
 import { products as defaultProducts } from "@/data/products";
+import {
+  getProductsFromDb,
+  isDatabaseConfigured,
+  syncProductsToDb,
+} from "@/lib/db";
 import { createSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
 const ADMIN_PASSWORD =
@@ -60,6 +65,10 @@ async function fetchFromJsonBin(): Promise<Product[] | null> {
 }
 
 async function fetchProducts(): Promise<Product[] | null> {
+  if (isDatabaseConfigured()) {
+    const fromDb = await getProductsFromDb();
+    return fromDb ?? [];
+  }
   const fromSupabase = await fetchFromSupabase();
   if (fromSupabase != null) return fromSupabase;
   return fetchFromJsonBin();
@@ -104,7 +113,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 1. Tentar Supabase (cliente criado na hora com env atual e trim)
+  // 1. Tentar apenas DATABASE_URL (Postgres direto)
+  if (isDatabaseConfigured()) {
+    const result = await syncProductsToDb(products);
+    if (!result.error) {
+      return NextResponse.json({ success: true, source: "database" }, { status: 200 });
+    }
+    return NextResponse.json(
+      { error: result.error, detail: result.error },
+      { status: 502 }
+    );
+  }
+
+  // 2. Tentar Supabase (URL + chaves)
   if (isSupabaseConfigured()) {
     try {
       const supabase = createSupabaseAdmin();
@@ -149,7 +170,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 2. Fallback: JSONBin
+  // 3. Fallback: JSONBin
   const apiKey = process.env.JSONBIN_API_KEY;
   const binId = process.env.JSONBIN_BIN_ID;
   if (!apiKey) {
