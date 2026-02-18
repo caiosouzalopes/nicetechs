@@ -260,7 +260,7 @@ function AddProductForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    const id = `prod-${Date.now()}`;
+    const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `prod-${Date.now()}`;
     onSave({
       id,
       name: name.trim(),
