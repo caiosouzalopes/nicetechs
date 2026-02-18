@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { products as defaultProducts } from "@/data/products";
 
 const ADMIN_PASSWORD =
   process.env.ADMIN_PASSWORD ||
@@ -19,7 +18,7 @@ const NO_CACHE_HEADERS = {
 };
 
 export async function GET() {
-  return NextResponse.json(defaultProducts, { headers: NO_CACHE_HEADERS });
+  return NextResponse.json([], { headers: NO_CACHE_HEADERS });
 }
 
 export async function POST(request: NextRequest) {

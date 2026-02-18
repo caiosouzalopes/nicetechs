@@ -1,5 +1,4 @@
 import type { Product } from "@/data/products";
-import { products as defaultProducts } from "@/data/products";
 
 const STORAGE_KEY_PRODUCTS = "nicetech_admin_products";
 const STORAGE_KEY_ANALYTICS = "nicetech_admin_analytics";
@@ -85,6 +84,6 @@ export function removeProduct(productId: string): Product[] {
 }
 
 export function resetToDefaults(): Product[] {
-  setStoredProducts([...defaultProducts]);
-  return [...defaultProducts];
+  setStoredProducts([]);
+  return [];
 }
