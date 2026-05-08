@@ -66,9 +66,10 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
           >
             <button
               onClick={onClose}
-              className="fixed top-6 right-6 z-[300] p-3 rounded-full bg-black/70 hover:bg-black/90 text-white transition-colors shadow-lg"
+              className="fixed top-4 right-4 z-[9999] p-4 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors shadow-2xl border-2 border-white"
+              style={{ minWidth: "56px", minHeight: "56px" }}
             >
-              <X size={24} />
+              <X size={28} />
             </button>
             <div
               onClick={(e) => e.stopPropagation()}
