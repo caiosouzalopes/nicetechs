@@ -4,8 +4,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.string().transform(Number).default("4000"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL é obrigatória"),
-  JWT_SECRET: z.string().min(16, "JWT_SECRET deve ter no mínimo 16 caracteres"),
-  ADMIN_PASSWORD: z.string().min(1, "ADMIN_PASSWORD é obrigatória"),
+  JWT_SECRET: z.string().min(16, "JWT_SECRET deve ter no mínimo 16 caracteres").default("nicetech-default-secret-key-change-in-production"),
+  ADMIN_PASSWORD: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
