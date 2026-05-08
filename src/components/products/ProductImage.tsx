@@ -12,6 +12,13 @@ interface ProductImageProps {
 
 export function ProductImage({ src, alt, fill, className, sizes }: ProductImageProps) {
   const imageSrc = Array.isArray(src) ? src[0] || "" : src;
+  
+  if (!imageSrc || typeof imageSrc !== "string") {
+    return (
+      <div className={className} style={fill ? { position: "absolute", inset: 0, width: "100%", height: "100%", backgroundColor: "#f0f0f0" } : undefined} />
+    );
+  }
+  
   const isDataUrl = imageSrc.startsWith("data:");
 
   if (isDataUrl) {
