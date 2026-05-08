@@ -144,7 +144,7 @@ export default function ContactPage() {
                     value={formState.email}
                     onChange={handleChange}
                     className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition"
-                    placeholder="seu@email.com"
+                    placeholder="caio_souza2016@hotmail.com"
                   />
                 </div>
                 <div>
