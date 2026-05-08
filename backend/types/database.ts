@@ -4,6 +4,7 @@
  */
 
 export type ProductCategory = "gamer" | "smartphone" | "games" | "accessories";
+export type UserRole = "admin" | "user";
 
 export interface ProductRow {
   id: string;
@@ -24,11 +25,22 @@ export interface ProductAnalyticsRow {
   updated_at: string;
 }
 
+export interface UserRow {
+  id: string;
+  email: string;
+  password_hash: string;
+  role: UserRole;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 export interface Database {
   public: {
     Tables: {
       products: { Row: ProductRow; Insert: Omit<ProductRow, "id" | "created_at" | "updated_at">; Update: Partial<ProductRow> };
       product_analytics: { Row: ProductAnalyticsRow; Insert: ProductAnalyticsRow; Update: Partial<ProductAnalyticsRow> };
+      users: { Row: UserRow; Insert: Omit<UserRow, "id" | "created_at" | "updated_at" | "deleted_at">; Update: Partial<UserRow> };
     };
   };
 }

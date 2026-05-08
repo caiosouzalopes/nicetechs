@@ -1,12 +1,6 @@
--- =============================================================================
--- NICETECH BACKEND - Schema PostgreSQL
--- UUID como PK, created_at/updated_at, soft delete onde aplicável.
--- =============================================================================
 
--- Extensão UUID (Supabase já possui)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Enum para categoria de produto (alinhado ao frontend)
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'product_category') THEN
@@ -15,7 +9,7 @@ BEGIN
 END
 $$;
 
--- Trigger: atualizar updated_at
+
 CREATE OR REPLACE FUNCTION public.set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -24,9 +18,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- -----------------------------------------------------------------------------
--- TABELA: products
--- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.products (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -47,13 +38,12 @@ CREATE INDEX IF NOT EXISTS idx_products_deleted_at ON public.products(deleted_at
 
 CREATE INDEX IF NOT EXISTS idx_products_name ON public.products(name);
 
+DROP TRIGGER IF EXISTS products_updated_at ON public.products;
 CREATE TRIGGER products_updated_at
   BEFORE UPDATE ON public.products
   FOR EACH ROW EXECUTE PROCEDURE public.set_updated_at();
 
--- -----------------------------------------------------------------------------
--- TABELA: product_analytics
--- -----------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS public.product_analytics (
   product_id UUID NOT NULL PRIMARY KEY REFERENCES public.products(id) ON DELETE CASCADE,
   views INTEGER NOT NULL DEFAULT 0,
@@ -63,13 +53,11 @@ CREATE TABLE IF NOT EXISTS public.product_analytics (
 
 COMMENT ON TABLE public.product_analytics IS 'Métricas de visualizações e cliques por produto.';
 
+DROP TRIGGER IF EXISTS product_analytics_updated_at ON public.product_analytics;
 CREATE TRIGGER product_analytics_updated_at
   BEFORE UPDATE ON public.product_analytics
   FOR EACH ROW EXECUTE PROCEDURE public.set_updated_at();
 
--- -----------------------------------------------------------------------------
--- FUNÇÕES RPC para analytics (evitar N+1 e garantir atomicidade)
--- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.increment_product_view(p_product_id UUID)
 RETURNS void AS $$
   INSERT INTO public.product_analytics (product_id, views, clicks)
@@ -88,10 +76,6 @@ RETURNS void AS $$
     updated_at = NOW();
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- -----------------------------------------------------------------------------
--- PROCEDURE: sincronizar catálogo de produtos (upsert + soft delete)
--- Entrada: JSONB no formato { products: [ {id, name, description, image, price, category}, ... ] }
--- -----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE public.sync_products(p_payload JSONB)
 LANGUAGE plpgsql
 AS $$

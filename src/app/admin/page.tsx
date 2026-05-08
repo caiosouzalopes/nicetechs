@@ -4,25 +4,43 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Lock, LogIn } from "lucide-react";
+import { Lock, LogIn, Mail } from "lucide-react";
 import Image from "next/image";
-import { ADMIN_PASSWORD } from "@/lib/auth";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password === ADMIN_PASSWORD) {
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:4000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.message || data.error || "Email ou senha inválidos");
+        return;
+      }
+
+      const data = await res.json();
       if (typeof window !== "undefined") {
-        localStorage.setItem("nicetech_admin_auth", "1");
+        localStorage.setItem("nicetech_admin_auth", data.access_token);
       }
       router.push("/admin/dashboard");
-    } else {
-      setError("Senha incorreta. Tente novamente.");
+    } catch {
+      setError("Erro ao conectar. Verifique se o backend está rodando.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,11 +68,36 @@ export default function AdminLoginPage() {
               Painel Administrativo
             </h1>
             <p className="text-muted-foreground text-sm">
-              Digite a senha para acessar
+              Entre com email e senha
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-foreground mb-2"
+              >
+                Email
+              </label>
+              <div className="relative">
+                <Mail
+                  className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"
+                  strokeWidth={1.5}
+                />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@nicetech.com"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition"
+                  autoFocus
+                  required
+                />
+              </div>
+            </div>
+
             <div>
               <label
                 htmlFor="password"
@@ -74,7 +117,6 @@ export default function AdminLoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Digite a senha"
                   className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition"
-                  autoFocus
                   required
                 />
               </div>
@@ -85,10 +127,11 @@ export default function AdminLoginPage() {
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shadow-glow-sm"
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shadow-glow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <LogIn size={20} />
-              Entrar
+              {isLoading ? "Entrando..." : "Entrar"}
             </button>
           </form>
 

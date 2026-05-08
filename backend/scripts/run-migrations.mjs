@@ -12,7 +12,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const databaseDir = join(__dirname, "..", "database");
 
-const order = ["001_schema.sql", "002_rls.sql", "003_seed.sql"];
+const order = ["001_schema.sql", "002_rls.sql", "003_seed.sql", "004_users.sql"];
 
 async function main() {
   const url = process.env.DATABASE_URL?.trim();

@@ -4,6 +4,7 @@ import type { Role } from "../../types/auth.js";
 import { UnauthorizedError, ValidationError } from "../../utils/errors.js";
 import jwt from "jsonwebtoken";
 import { env } from "../../config/env.js";
+import { userRepository } from "../../repositories/index.js";
 
 const EXPIRES_IN_SECONDS = 60 * 60;
 
@@ -13,26 +14,45 @@ function signAccessToken(payload: { sub: string; email: string; role: Role }): s
 
 export const authService = {
   async register(input: RegisterInput): Promise<LoginResponse> {
-    throw new ValidationError(
-      "Registro não está habilitado. Este sistema usa autenticação simples por senha de admin."
-    );
-  },
-
-  async login(email: string, password: string): Promise<LoginResponse> {
-    if (!password || password !== env.ADMIN_PASSWORD) {
-      throw new UnauthorizedError("Email ou senha inválidos");
+    const existing = await userRepository.findByEmail(input.email);
+    if (existing) {
+      throw new ValidationError("Email já cadastrado");
     }
-    const role: Role = "admin";
-    const userId = "admin";
-    const accessToken = signAccessToken({ sub: userId, email: email || "admin@local", role });
+    const user = await userRepository.create({
+      email: input.email,
+      password: input.password,
+      role: "user",
+    });
+    const accessToken = signAccessToken({ sub: user.id, email: user.email, role: user.role as Role });
     return {
       access_token: accessToken,
       refresh_token: "",
       expires_in: EXPIRES_IN_SECONDS,
       user: {
-        id: userId,
-        email: email || "admin@local",
-        role,
+        id: user.id,
+        email: user.email,
+        role: user.role as Role,
+      },
+    };
+  },
+
+  async login(email: string, password: string): Promise<LoginResponse> {
+    if (!email || !password) {
+      throw new UnauthorizedError("Email e senha são obrigatórios");
+    }
+    const user = await userRepository.verifyPassword(email, password);
+    if (!user) {
+      throw new UnauthorizedError("Email ou senha inválidos");
+    }
+    const accessToken = signAccessToken({ sub: user.id, email: user.email, role: user.role as Role });
+    return {
+      access_token: accessToken,
+      refresh_token: "",
+      expires_in: EXPIRES_IN_SECONDS,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role as Role,
       },
     };
   },
@@ -45,10 +65,12 @@ export const authService = {
     try {
       const decoded = jwt.verify(accessToken, env.JWT_SECRET) as { sub?: string; email?: string; role?: Role };
       if (!decoded?.sub) return null;
+      const user = await userRepository.findById(decoded.sub);
+      if (!user) return null;
       return {
-        id: decoded.sub,
-        email: decoded.email ?? "admin@local",
-        role: decoded.role ?? "admin",
+        id: user.id,
+        email: user.email,
+        role: user.role as Role,
       };
     } catch {
       return null;
