@@ -48,13 +48,13 @@ export default function ContactPage() {
                   Localização
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Rua 5, 211 – Nova Colina, Colina – SP
+                  Avenida Expedicionário Roberto Marcondes, 16 – Centro, Colina – SP
                 </p>
               </div>
               <div className="relative aspect-video w-full min-h-[280px] bg-muted/50">
                 <iframe
-                  title="Mapa - Nicetech Solutions - Rua 5, 211, Nova Colina, Colina SP"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d784.5540135064317!2d-48.52817975091365!3d-20.710676975701134!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94bb92dd17b5d3db%3A0xe9366e707af512b0!2sR.%20Cinco%2C%20211%2C%20Colina%20-%20SP%2C%2014770-000!5e0!3m2!1spt-BR!2sbr!4v1770174052498!5m2!1spt-BR!2sbr"
+                  title="Mapa - Nicetech Solutions - Avenida Expedicionário Roberto Marcondes, 16, Centro, Colina SP"
+                  src="https://www.google.com/maps/embed?pb=!4v1778213929550!6m8!1m7!1s_lTBRSeDZ2jNWmfvGHlxwQ!2m2!1d-20.71551594264744!2d-48.54298150510537!3f29.80701566848451!4f-10.819329986860112!5f0.7820865974627469"
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
