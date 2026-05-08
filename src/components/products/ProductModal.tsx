@@ -70,7 +70,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-sm"
           />
 
           {/* Modal Container */}
@@ -78,7 +78,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-[99999] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-4"
           >
             <div
               onClick={(e) => e.stopPropagation()}
@@ -87,7 +87,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
               {/* Close Button - Fixed position outside scroll */}
               <button
                 onClick={onClose}
-                className="fixed top-6 right-6 z-[100000] flex items-center justify-center w-12 h-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl transition-all hover:scale-110"
+                className="fixed top-6 right-6 z-[1000000] flex items-center justify-center w-12 h-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl transition-all hover:scale-110"
               >
                 <X size={24} />
               </button>
