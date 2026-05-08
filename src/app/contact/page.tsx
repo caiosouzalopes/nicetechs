@@ -101,7 +101,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <p className="font-medium text-foreground">Endereço</p>
-                <p className="text-sm text-muted-foreground">Rua 5, 211 – Nova Colina, Colina – SP</p>
+                <p className="text-sm text-muted-foreground">Avenida Expedicionário Roberto Marcondes, 16 – Centro, Colina – SP</p>
               </div>
             </div>
           </motion.div>
