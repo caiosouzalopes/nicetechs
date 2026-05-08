@@ -56,25 +56,24 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[1000] bg-black/50 backdrop-blur-sm"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
           >
-            <button
-              onClick={onClose}
-              className="fixed top-4 right-4 z-[9999] p-4 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors shadow-2xl border-2 border-white"
-              style={{ minWidth: "56px", minHeight: "56px" }}
-            >
-              <X size={28} />
-            </button>
             <div
               onClick={(e) => e.stopPropagation()}
               className="relative w-full max-w-5xl max-h-[90vh] bg-card rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
             >
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 z-[2000] p-3 rounded-full bg-black/80 hover:bg-black text-white transition-colors shadow-xl border border-white/20"
+              >
+                <X size={24} />
+              </button>
 
               <div className="relative aspect-square md:aspect-auto md:w-1/2 bg-muted">
                 <ProductImage
