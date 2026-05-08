@@ -29,20 +29,23 @@ COMMENT ON TABLE public.users IS 'Usuários do sistema; autenticação via email
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON public.users(deleted_at) WHERE deleted_at IS NULL;
 
+DROP TRIGGER IF EXISTS users_updated_at ON public.users;
 CREATE TRIGGER users_updated_at
   BEFORE UPDATE ON public.users
   FOR EACH ROW EXECUTE PROCEDURE public.set_updated_at();
 
 -- -----------------------------------------------------------------------------
 -- SEED: Usuário admin inicial
--- Senha padrão: Admin123! (deve ser alterado após primeiro login)
--- Hash gerado via bcrypt (10 rounds) para "Admin123!"
+-- Senha padrão: caiooride3
+-- Hash gerado via bcrypt (10 rounds) para "caiooride3"
 -- -----------------------------------------------------------------------------
 INSERT INTO public.users (id, email, password_hash, role)
 VALUES (
   '00000000-0000-0000-0000-000000000001',
   'admin@nicetech.com',
-  '$2b$10$w9MKnz0ql5R4.O4uSG9HFO1uRsW7gJjQWSb3hYijxve6j/f2LFHja',
+  '$2b$10$6r2s4jHNSv6QgXek2gWWye..O2IOUYnXnPKLv1l9sngs8FNFK7ATm',
   'admin'
 )
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (email) DO UPDATE SET
+  password_hash = EXCLUDED.password_hash,
+  role = EXCLUDED.role;
