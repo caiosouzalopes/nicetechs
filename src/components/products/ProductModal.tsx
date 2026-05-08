@@ -20,11 +20,14 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
     }
     return () => {
       document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
     };
   }, [isOpen]);
 
@@ -67,7 +70,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
             >
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                className="absolute top-4 right-4 z-[200] p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
               >
                 <X size={20} />
               </button>
