@@ -64,16 +64,16 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
             exit={{ opacity: 0, scale: 0.95 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4"
           >
+            <button
+              onClick={onClose}
+              className="fixed top-6 right-6 z-[300] p-3 rounded-full bg-black/70 hover:bg-black/90 text-white transition-colors shadow-lg"
+            >
+              <X size={24} />
+            </button>
             <div
               onClick={(e) => e.stopPropagation()}
               className="relative w-full max-w-5xl max-h-[90vh] bg-card rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
             >
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 z-[200] p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
-              >
-                <X size={20} />
-              </button>
 
               <div className="relative aspect-square md:aspect-auto md:w-1/2 bg-muted">
                 <ProductImage
