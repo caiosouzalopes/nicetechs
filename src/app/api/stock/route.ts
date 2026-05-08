@@ -88,13 +88,14 @@ export async function POST(request: NextRequest) {
     }
     if (products.length > 0) {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      const rows = products.map((p: { id?: string; name?: string; description?: string; image?: string; price?: string; category?: string }) => {
+      const rows = products.map((p: { id?: string; name?: string; description?: string; image?: string | string[]; price?: string; category?: string }) => {
         const id = (p.id && uuidRegex.test(p.id)) ? p.id : crypto.randomUUID();
+        const imageValue = Array.isArray(p.image) ? p.image : p.image ? [p.image] : [];
         return {
           id,
           name: String(p.name ?? "").trim() || "Produto",
           description: String(p.description ?? "").trim(),
-          image: String(p.image ?? "").trim(),
+          image: imageValue,
           price: String(p.price ?? "Sob consulta").trim() || "Sob consulta",
           category: normalizeCategory(p.category ?? "gamer"),
         };
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
         for (const r of rows) {
           await sql`
             insert into products (id, name, description, image, price, category)
-            values (${r.id}::uuid, ${r.name}, ${r.description}, ${r.image}, ${r.price}, ${r.category})
+            values (${r.id}::uuid, ${r.name}, ${r.description}, ${r.image}::text[], ${r.price}, ${r.category})
             on conflict (id)
             do update set
               name = excluded.name,

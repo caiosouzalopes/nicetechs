@@ -2,7 +2,7 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  image: string;
+  image: string | string[];
   price?: string;
   category: "gamer" | "smartphone" | "games" | "accessories";
 }

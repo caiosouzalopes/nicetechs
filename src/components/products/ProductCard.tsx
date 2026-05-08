@@ -2,11 +2,12 @@
 
 import { ProductImage } from "./ProductImage";
 import { motion } from "framer-motion";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Product } from "@/data/products";
 import { getWhatsAppProductMessage, getWhatsAppUrl } from "@/data/products";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface ProductCardProps {
   product: Product;
@@ -17,6 +18,22 @@ interface ProductCardProps {
 
 export function ProductCard({ product, index = 0, className, onWhatsAppClick }: ProductCardProps) {
   const whatsAppUrl = getWhatsAppUrl(getWhatsAppProductMessage(product.name));
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const images = Array.isArray(product.image) ? product.image : [product.image];
+  const hasMultipleImages = images.length > 1;
+
+  const nextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   const handleClick = () => {
     onWhatsAppClick?.();
@@ -42,12 +59,39 @@ export function ProductCard({ product, index = 0, className, onWhatsAppClick }: 
         className="block relative aspect-[4/3] overflow-hidden bg-muted"
       >
         <ProductImage
-          src={product.image}
+          src={images[currentImageIndex]}
           alt={product.name}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-110"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
+        {hasMultipleImages && (
+          <>
+            <button
+              onClick={prevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors opacity-0 group-hover:opacity-100"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              onClick={nextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors opacity-0 group-hover:opacity-100"
+            >
+              <ChevronRight size={20} />
+            </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {images.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    "w-2 h-2 rounded-full transition-colors",
+                    idx === currentImageIndex ? "bg-white" : "bg-white/50"
+                  )}
+                />
+              ))}
+            </div>
+          </>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-nicetech-navy/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <span className="inline-flex items-center gap-2 text-sm font-medium text-white">

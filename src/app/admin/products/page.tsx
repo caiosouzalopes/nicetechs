@@ -253,7 +253,7 @@ function AddProductForm({
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState<string | string[]>("");
   const [category, setCategory] = useState<Product["category"]>("gamer");
   const [price, setPrice] = useState("Sob consulta");
 
@@ -261,11 +261,12 @@ function AddProductForm({
     e.preventDefault();
     if (!name.trim()) return;
     const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `prod-${Date.now()}`;
+    const imageValue = Array.isArray(image) && image.length > 0 ? image : image || "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600&h=400&fit=crop";
     onSave({
       id,
       name: name.trim(),
       description: description.trim(),
-      image: image || "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600&h=400&fit=crop",
+      image: imageValue,
       category,
       price: price.trim() || "Sob consulta",
     });
@@ -371,13 +372,13 @@ function ProductEditForm({
   onSave,
   onCancel,
 }: {
-  product: { id: string; name: string; description: string; image: string; category: string; price?: string };
-  onSave: (updates: { name?: string; description?: string; image?: string; price?: string }) => void;
+  product: { id: string; name: string; description: string; image: string | string[]; category: string; price?: string };
+  onSave: (updates: { name?: string; description?: string; image?: string | string[]; price?: string }) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(product.name);
   const [description, setDescription] = useState(product.description);
-  const [image, setImage] = useState(product.image);
+  const [image, setImage] = useState<string | string[]>(product.image);
   const [price, setPrice] = useState(product.price ?? "Sob consulta");
 
   return (

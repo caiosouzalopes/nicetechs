@@ -91,7 +91,7 @@ export function Footer() {
             <ul className="space-y-4 text-sm text-muted-foreground">
               <li className="flex items-center gap-3">
                 <MapPin size={18} className="text-primary shrink-0" />
-                Rua 5, 211 – Nova Colina, Colina – SP
+                Avenida Expedicionário Roberto Marcondes, 16 – Centro, Colina – SP
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-primary shrink-0" />
@@ -120,7 +120,7 @@ export function Footer() {
           <p className="text-xs text-muted-foreground">
             Desenvolvido por{" "}
             <a
-              href="https://www.hbstudiodev.com"
+              href="https://portfoliohbstudiodev.vercel.app/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline font-medium"
