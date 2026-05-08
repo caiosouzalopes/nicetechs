@@ -51,31 +51,36 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[1000] bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm"
           />
+          
+          {/* Modal Container */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-5xl max-h-[90vh] bg-card rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
+              className="relative w-full max-w-6xl max-h-[90vh] bg-background rounded-2xl overflow-hidden shadow-2xl border border-border flex flex-col md:flex-row"
             >
+              {/* Close Button - Fixed position outside scroll */}
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 z-[2000] p-3 rounded-full bg-black/80 hover:bg-black text-white transition-colors shadow-xl border border-white/20"
+                className="fixed top-6 right-6 z-[10000] flex items-center justify-center w-12 h-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl transition-all hover:scale-110"
               >
                 <X size={24} />
               </button>
 
-              <div className="relative aspect-square md:aspect-auto md:w-1/2 bg-muted">
+              {/* Image Section */}
+              <div className="relative aspect-square md:aspect-auto md:w-1/2 bg-muted shrink-0">
                 <ProductImage
                   src={images[currentImageIndex]}
                   alt={product.name}
@@ -86,22 +91,22 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/60 hover:bg-black/80 text-white transition-colors"
                     >
-                      <ChevronLeft size={24} />
+                      <ChevronLeft size={28} />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/60 hover:bg-black/80 text-white transition-colors"
                     >
-                      <ChevronRight size={24} />
+                      <ChevronRight size={28} />
                     </button>
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1">
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
                       {images.map((_, idx) => (
                         <div
                           key={idx}
                           className={cn(
-                            "w-2 h-2 rounded-full transition-colors",
+                            "w-3 h-3 rounded-full transition-colors",
                             idx === currentImageIndex ? "bg-white" : "bg-white/50"
                           )}
                         />
@@ -111,42 +116,48 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
                 )}
               </div>
 
-              <div className="flex-1 p-6 md:p-8 overflow-y-auto">
-                <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-4">
-                  {product.name}
-                </h2>
-                {product.price && (
-                  <p className="text-primary font-semibold text-xl mb-1">{product.price}</p>
-                )}
-                {product.installments && (
-                  <p className="text-sm text-muted-foreground mb-4">
-                    em até {product.installments.count}x de {product.installments.value}
-                  </p>
-                )}
-                <div className="mb-6">
-                  <h3 className="font-semibold text-foreground mb-2">Descrição</h3>
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {product.description}
-                  </p>
+              {/* Content Section - Scrollable */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 md:p-8">
+                  <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-4">
+                    {product.name}
+                  </h2>
+                  {product.price && (
+                    <p className="text-primary font-bold text-2xl md:text-3xl mb-2">{product.price}</p>
+                  )}
+                  {product.installments && (
+                    <p className="text-sm md:text-base text-muted-foreground mb-6 font-medium">
+                      em até {product.installments.count}x de {product.installments.value}
+                    </p>
+                  )}
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-foreground mb-2 text-lg">Descrição</h3>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {product.description}
+                    </p>
+                  </div>
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-foreground mb-2 text-lg">Categoria</h3>
+                    <p className="text-muted-foreground capitalize">
+                      {product.category === "gamer" && "PC Gamer"}
+                      {product.category === "smartphone" && "Smartphone"}
+                      {product.category === "games" && "Consoles/Jogos"}
+                      {product.category === "accessories" && "Acessórios"}
+                    </p>
+                  </div>
                 </div>
-                <div className="mb-6">
-                  <h3 className="font-semibold text-foreground mb-2">Categoria</h3>
-                  <p className="text-muted-foreground capitalize">
-                    {product.category === "gamer" && "PC Gamer"}
-                    {product.category === "smartphone" && "Smartphone"}
-                    {product.category === "games" && "Consoles/Jogos"}
-                    {product.category === "accessories" && "Acessórios"}
-                  </p>
+                {/* Fixed bottom action */}
+                <div className="p-6 md:p-8 border-t border-border bg-card/50 backdrop-blur-sm shrink-0">
+                  <a
+                    href={whatsAppUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 w-full py-4 px-6 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
+                  >
+                    <MessageCircle size={24} />
+                    Comprar no WhatsApp
+                  </a>
                 </div>
-                <a
-                  href={whatsAppUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 w-full py-3 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
-                >
-                  <MessageCircle size={20} />
-                  Comprar no WhatsApp
-                </a>
               </div>
             </div>
           </motion.div>
