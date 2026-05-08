@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import { ProductImage } from "./ProductImage";
 import type { Product } from "@/data/products";
@@ -31,6 +32,16 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isOpen, onClose]);
+
   if (!product) return null;
 
   const images = Array.isArray(product.image) ? product.image : [product.image];
@@ -47,7 +58,9 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  return (
+  if (!product) return null;
+
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <>
@@ -165,4 +178,6 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
       )}
     </AnimatePresence>
   );
+
+  return typeof window !== "undefined" ? createPortal(modalContent, document.body) : null;
 }
