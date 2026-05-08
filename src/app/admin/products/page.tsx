@@ -256,12 +256,18 @@ function AddProductForm({
   const [image, setImage] = useState<string | string[]>("");
   const [category, setCategory] = useState<Product["category"]>("gamer");
   const [price, setPrice] = useState("Sob consulta");
+  const [installmentCount, setInstallmentCount] = useState("");
+  const [installmentValue, setInstallmentValue] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `prod-${Date.now()}`;
     const imageValue = Array.isArray(image) && image.length > 0 ? image : image || "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600&h=400&fit=crop";
+    const installments = installmentCount && installmentValue ? {
+      count: parseInt(installmentCount),
+      value: installmentValue.trim(),
+    } : undefined;
     onSave({
       id,
       name: name.trim(),
@@ -269,6 +275,7 @@ function AddProductForm({
       image: imageValue,
       category,
       price: price.trim() || "Sob consulta",
+      installments,
     });
   };
 
@@ -343,8 +350,32 @@ function AddProductForm({
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
-              placeholder="Ex: Sob consulta"
+              placeholder="Ex: R$ 5.000 ou Sob consulta"
             />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Parcelas (opcional)</label>
+              <input
+                type="number"
+                value={installmentCount}
+                onChange={(e) => setInstallmentCount(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                placeholder="Ex: 12"
+                min="1"
+                max="24"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Valor parcela (opcional)</label>
+              <input
+                type="text"
+                value={installmentValue}
+                onChange={(e) => setInstallmentValue(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                placeholder="Ex: R$ 450"
+              />
+            </div>
           </div>
           <div className="flex gap-3 pt-4">
             <button
@@ -372,14 +403,16 @@ function ProductEditForm({
   onSave,
   onCancel,
 }: {
-  product: { id: string; name: string; description: string; image: string | string[]; category: string; price?: string };
-  onSave: (updates: { name?: string; description?: string; image?: string | string[]; price?: string }) => void;
+  product: { id: string; name: string; description: string; image: string | string[]; category: string; price?: string; installments?: { count: number; value: string } };
+  onSave: (updates: { name?: string; description?: string; image?: string | string[]; price?: string; installments?: { count: number; value: string } }) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(product.name);
   const [description, setDescription] = useState(product.description);
   const [image, setImage] = useState<string | string[]>(product.image);
   const [price, setPrice] = useState(product.price ?? "Sob consulta");
+  const [installmentCount, setInstallmentCount] = useState(product.installments?.count?.toString() ?? "");
+  const [installmentValue, setInstallmentValue] = useState(product.installments?.value ?? "");
 
   return (
     <motion.div
@@ -434,9 +467,43 @@ function ProductEditForm({
             placeholder="Ex: R$ 3.000 ou Sob consulta"
           />
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
+              Parcelas
+            </label>
+            <input
+              type="number"
+              value={installmentCount}
+              onChange={(e) => setInstallmentCount(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+              placeholder="Ex: 12"
+              min="1"
+              max="24"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
+              Valor parcela
+            </label>
+            <input
+              type="text"
+              value={installmentValue}
+              onChange={(e) => setInstallmentValue(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+              placeholder="Ex: R$ 450"
+            />
+          </div>
+        </div>
         <div className="flex gap-2 pt-2">
           <button
-            onClick={() => onSave({ name, description, image, price: price.trim() || "Sob consulta" })}
+            onClick={() => {
+              const installments = installmentCount && installmentValue ? {
+                count: parseInt(installmentCount),
+                value: installmentValue.trim(),
+              } : undefined;
+              onSave({ name, description, image, price: price.trim() || "Sob consulta", installments });
+            }}
             className="flex-1 py-2 px-3 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
           >
             Salvar

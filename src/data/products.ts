@@ -5,6 +5,10 @@ export interface Product {
   image: string | string[];
   price?: string;
   category: "gamer" | "smartphone" | "games" | "accessories";
+  installments?: {
+    count: number;
+    value: string;
+  };
 }
 
 export const products: Product[] = [

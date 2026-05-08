@@ -97,8 +97,15 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       if (res.ok && Array.isArray(data)) {
-        setProducts(data);
-        setStoredProducts(data);
+        const formattedData = data.map((p: any) => ({
+          ...p,
+          installments: p.installment_count && p.installment_value ? {
+            count: p.installment_count,
+            value: p.installment_value,
+          } : undefined,
+        }));
+        setProducts(formattedData);
+        setStoredProducts(formattedData);
         return;
       }
       if (!res.ok) {
@@ -158,8 +165,15 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
-            setProducts(data);
-            setStoredProducts(data);
+            const formattedData = data.map((p: any) => ({
+              ...p,
+              installments: p.installment_count && p.installment_value ? {
+                count: p.installment_count,
+                value: p.installment_value,
+              } : undefined,
+            }));
+            setProducts(formattedData);
+            setStoredProducts(formattedData);
             const ar = await fetch("/api/analytics", { cache: "no-store" });
             if (!cancelled) {
               if (ar.status === 204) setAnalytics(getAnalytics());

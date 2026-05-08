@@ -102,7 +102,12 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
                   {product.name}
                 </h2>
                 {product.price && (
-                  <p className="text-primary font-semibold text-xl mb-4">{product.price}</p>
+                  <p className="text-primary font-semibold text-xl mb-1">{product.price}</p>
+                )}
+                {product.installments && (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    em até {product.installments.count}x de {product.installments.value}
+                  </p>
                 )}
                 <div className="mb-6">
                   <h3 className="font-semibold text-foreground mb-2">Descrição</h3>

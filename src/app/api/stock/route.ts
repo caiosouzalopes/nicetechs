@@ -34,7 +34,7 @@ export async function GET() {
     }
     const sql = getNeonSql();
     const rows = await sql`
-      select id, name, description, image, price, category
+      select id, name, description, image, price, category, installment_count, installment_value
       from products
       where deleted_at is null
       order by created_at desc
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
     if (products.length > 0) {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      const rows = products.map((p: { id?: string; name?: string; description?: string; image?: string | string[]; price?: string; category?: string }) => {
+      const rows = products.map((p: { id?: string; name?: string; description?: string; image?: string | string[]; price?: string; category?: string; installments?: { count: number; value: string } }) => {
         const id = (p.id && uuidRegex.test(p.id)) ? p.id : crypto.randomUUID();
         const imageValue = Array.isArray(p.image) ? p.image : p.image ? [p.image] : [];
         return {
@@ -98,6 +98,8 @@ export async function POST(request: NextRequest) {
           image: imageValue,
           price: String(p.price ?? "Sob consulta").trim() || "Sob consulta",
           category: normalizeCategory(p.category ?? "gamer"),
+          installmentCount: p.installments?.count ?? null,
+          installmentValue: p.installments?.value ?? null,
         };
       });
 
@@ -105,8 +107,8 @@ export async function POST(request: NextRequest) {
         await sql`begin`;
         for (const r of rows) {
           await sql`
-            insert into products (id, name, description, image, price, category)
-            values (${r.id}::uuid, ${r.name}, ${r.description}, ${r.image}::text[], ${r.price}, ${r.category})
+            insert into products (id, name, description, image, price, category, installment_count, installment_value)
+            values (${r.id}::uuid, ${r.name}, ${r.description}, ${r.image}::text[], ${r.price}, ${r.category}, ${r.installmentCount}, ${r.installmentValue})
             on conflict (id)
             do update set
               name = excluded.name,
@@ -114,6 +116,8 @@ export async function POST(request: NextRequest) {
               image = excluded.image,
               price = excluded.price,
               category = excluded.category,
+              installment_count = excluded.installment_count,
+              installment_value = excluded.installment_value,
               deleted_at = null
           `;
         }

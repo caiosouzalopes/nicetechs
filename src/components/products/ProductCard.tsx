@@ -107,7 +107,12 @@ export function ProductCard({ product, index = 0, className, onWhatsAppClick }: 
           <h3 className="font-display font-bold text-foreground text-lg mb-2 line-clamp-2">{product.name}</h3>
           <p className="text-muted-foreground text-sm mb-4 flex-1 line-clamp-2 leading-relaxed">{product.description}</p>
           {product.price && (
-            <p className="text-primary font-semibold text-sm mb-4">{product.price}</p>
+            <p className="text-primary font-semibold text-sm mb-1">{product.price}</p>
+          )}
+          {product.installments && (
+            <p className="text-xs text-muted-foreground mb-4">
+              em até {product.installments.count}x de {product.installments.value}
+            </p>
           )}
           <div className="flex gap-2">
             <Button
