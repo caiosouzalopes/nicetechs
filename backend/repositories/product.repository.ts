@@ -1,8 +1,7 @@
-import { getSupabaseAdmin } from "../config/supabase";
-import type { ProductRow } from "../types/database";
-import type { ProductCreateInput, ProductUpdateInput, ListProductsQuery } from "../types/api";
-import type { PaginatedResult } from "../types/api";
-import { NotFoundError } from "../utils/errors";
+import type { ProductRow } from "../types/database.js";
+import type { ProductCreateInput, ProductUpdateInput, ListProductsQuery, PaginatedResult } from "../types/api.js";
+import { NotFoundError } from "../utils/errors.js";
+import { query } from "../config/db.js";
 
 const TABLE = "products";
 const PAGE_SIZE_DEFAULT = 20;
@@ -10,18 +9,11 @@ const PAGE_SIZE_MAX = 100;
 
 export const productRepository = {
   async findById(id: string): Promise<ProductRow | null> {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from(TABLE)
-      .select("*")
-      .eq("id", id)
-      .is("deleted_at", null)
-      .single();
-    if (error) {
-      if (error.code === "PGRST116") return null;
-      throw error;
-    }
-    return data as ProductRow;
+    const rows = await query<ProductRow>(
+      `select * from ${TABLE} where id = $1 and deleted_at is null limit 1`,
+      [id]
+    );
+    return rows[0] ?? null;
   },
 
   async findByIdOrThrow(id: string): Promise<ProductRow> {
@@ -30,30 +22,39 @@ export const productRepository = {
     return row;
   },
 
-  async list(query: ListProductsQuery): Promise<PaginatedResult<ProductRow>> {
-    const page = Math.max(1, query.page ?? 1);
-    const pageSize = Math.min(PAGE_SIZE_MAX, Math.max(1, query.page_size ?? PAGE_SIZE_DEFAULT));
-    const supabase = getSupabaseAdmin();
+  async list(queryInput: ListProductsQuery): Promise<PaginatedResult<ProductRow>> {
+    const page = Math.max(1, queryInput.page ?? 1);
+    const pageSize = Math.min(PAGE_SIZE_MAX, Math.max(1, queryInput.page_size ?? PAGE_SIZE_DEFAULT));
+    const offset = (page - 1) * pageSize;
 
-    let q = supabase
-      .from(TABLE)
-      .select("*", { count: "exact", head: true })
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .range((page - 1) * pageSize, page * pageSize - 1);
+    const where: string[] = ["deleted_at is null"]; 
+    const params: unknown[] = [];
+    let p = 1;
 
-    if (query.category) {
-      q = q.eq("category", query.category);
-    }
-    if (query.search?.trim()) {
-      const term = query.search.trim().replace(/%/g, "\\%");
-      q = q.or(`name.ilike.%${term}%,description.ilike.%${term}%`);
+    if (queryInput.category) {
+      where.push(`category = $${p++}`);
+      params.push(queryInput.category);
     }
 
-    const { data, error, count } = await q;
-    if (error) throw error;
+    if (queryInput.search?.trim()) {
+      where.push(`(name ilike $${p} or description ilike $${p})`);
+      params.push(`%${queryInput.search.trim()}%`);
+      p += 1;
+    }
 
-    const total = count ?? 0;
+    const whereSql = where.length ? `where ${where.join(" and ")}` : "";
+
+    const countRows = await query<{ total: string }>(
+      `select count(*)::text as total from ${TABLE} ${whereSql}`,
+      params
+    );
+    const total = Number(countRows[0]?.total ?? 0);
+
+    const data = await query<ProductRow>(
+      `select * from ${TABLE} ${whereSql} order by created_at desc limit $${p} offset $${p + 1}`,
+      [...params, pageSize, offset]
+    );
+
     return {
       data: (data ?? []) as ProductRow[],
       total,
@@ -64,49 +65,69 @@ export const productRepository = {
   },
 
   async create(input: ProductCreateInput): Promise<ProductRow> {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from(TABLE)
-      .insert({
-        name: input.name,
-        description: input.description ?? "",
-        image: input.image ?? "",
-        price: input.price ?? "Sob consulta",
-        category: input.category,
-      })
-      .select()
-      .single();
-    if (error) throw error;
-    return data as ProductRow;
+    const rows = await query<ProductRow>(
+      `insert into ${TABLE} (name, description, image, price, category)
+       values ($1, $2, $3, $4, $5)
+       returning *`,
+      [
+        input.name,
+        input.description ?? "",
+        input.image ?? "",
+        input.price ?? "Sob consulta",
+        input.category,
+      ]
+    );
+    return rows[0] as ProductRow;
   },
 
   async update(id: string, input: ProductUpdateInput): Promise<ProductRow> {
     await this.findByIdOrThrow(id);
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from(TABLE)
-      .update({
-        ...(input.name != null && { name: input.name }),
-        ...(input.description != null && { description: input.description }),
-        ...(input.image != null && { image: input.image }),
-        ...(input.price != null && { price: input.price }),
-        ...(input.category != null && { category: input.category }),
-      })
-      .eq("id", id)
-      .is("deleted_at", null)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as ProductRow;
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    let p = 1;
+
+    if (input.name != null) {
+      sets.push(`name = $${p++}`);
+      params.push(input.name);
+    }
+    if (input.description != null) {
+      sets.push(`description = $${p++}`);
+      params.push(input.description);
+    }
+    if (input.image != null) {
+      sets.push(`image = $${p++}`);
+      params.push(input.image);
+    }
+    if (input.price != null) {
+      sets.push(`price = $${p++}`);
+      params.push(input.price);
+    }
+    if (input.category != null) {
+      sets.push(`category = $${p++}`);
+      params.push(input.category);
+    }
+
+    if (sets.length === 0) {
+      return await this.findByIdOrThrow(id);
+    }
+
+    params.push(id);
+    const rows = await query<ProductRow>(
+      `update ${TABLE}
+       set ${sets.join(", ")}
+       where id = $${p} and deleted_at is null
+       returning *`,
+      params
+    );
+    if (!rows[0]) throw new NotFoundError("Produto não encontrado");
+    return rows[0];
   },
 
   async softDelete(id: string): Promise<void> {
     await this.findByIdOrThrow(id);
-    const supabase = getSupabaseAdmin();
-    const { error } = await supabase
-      .from(TABLE)
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw error;
+    await query(
+      `update ${TABLE} set deleted_at = now() where id = $1`,
+      [id]
+    );
   },
 };

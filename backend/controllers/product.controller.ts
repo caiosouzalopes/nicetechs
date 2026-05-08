@@ -1,10 +1,11 @@
 import { Response } from "express";
-import { productService } from "../services";
-import type { AuthRequest } from "../middlewares";
+import { productService } from "../services/index.js";
+import type { AuthRequest } from "../middlewares/index.js";
+import type { ListProductsQuery } from "../types/api.js";
 
 export const productController = {
   async list(req: AuthRequest, res: Response): Promise<void> {
-    const query = req.query as { page?: number; page_size?: number; category?: string; search?: string };
+    const query = req.query as unknown as ListProductsQuery;
     const result = await productService.list(query);
     res.json(result);
   },

@@ -5,16 +5,6 @@
 
 export type ProductCategory = "gamer" | "smartphone" | "games" | "accessories";
 
-export interface ProfileRow {
-  id: string;
-  email: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  role: "admin" | "user";
-  created_at: string;
-  updated_at: string;
-}
-
 export interface ProductRow {
   id: string;
   name: string;
@@ -37,7 +27,6 @@ export interface ProductAnalyticsRow {
 export interface Database {
   public: {
     Tables: {
-      profiles: { Row: ProfileRow; Insert: Omit<ProfileRow, "created_at" | "updated_at">; Update: Partial<ProfileRow> };
       products: { Row: ProductRow; Insert: Omit<ProductRow, "id" | "created_at" | "updated_at">; Update: Partial<ProductRow> };
       product_analytics: { Row: ProductAnalyticsRow; Insert: ProductAnalyticsRow; Update: Partial<ProductAnalyticsRow> };
     };

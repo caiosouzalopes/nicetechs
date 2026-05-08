@@ -1,6 +1,6 @@
 import { Response } from "express";
-import { analyticsService } from "../services";
-import type { AuthRequest } from "../middlewares";
+import { analyticsService } from "../services/index.js";
+import type { AuthRequest } from "../middlewares/index.js";
 
 export const analyticsController = {
   async getAll(req: AuthRequest, res: Response): Promise<void> {

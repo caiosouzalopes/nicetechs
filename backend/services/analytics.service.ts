@@ -1,5 +1,6 @@
-import { analyticsRepository } from "../repositories";
-import type { AnalyticsDto } from "../types/api";
+import { analyticsRepository } from "../repositories/index.js";
+import type { AnalyticsDto } from "../types/api.js";
+import type { ProductAnalyticsRow } from "../types/database.js";
 
 export const analyticsService = {
   async getByProductId(productId: string): Promise<AnalyticsDto | null> {
@@ -14,7 +15,7 @@ export const analyticsService = {
 
   async getAll(): Promise<AnalyticsDto[]> {
     const rows = await analyticsRepository.getAll();
-    return rows.map((r) => ({
+    return rows.map((r: ProductAnalyticsRow) => ({
       product_id: r.product_id,
       views: r.views,
       clicks: r.clicks,

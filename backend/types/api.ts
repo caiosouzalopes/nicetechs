@@ -1,4 +1,4 @@
-import type { ProductCategory } from "./database";
+import type { ProductCategory } from "./database.js";
 
 export interface ProductDto {
   id: string;

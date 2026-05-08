@@ -1,90 +1,57 @@
-import { getSupabasePublic, getSupabaseAdmin } from "../../config/supabase";
-import { profileRepository } from "../../repositories";
-import type { RegisterInput } from "../../types/auth";
-import type { LoginResponse } from "../../types/auth";
-import type { Role } from "../../types/auth";
-import { UnauthorizedError, ValidationError } from "../../utils/errors";
+import type { RegisterInput } from "../../types/auth.js";
+import type { LoginResponse } from "../../types/auth.js";
+import type { Role } from "../../types/auth.js";
+import { UnauthorizedError, ValidationError } from "../../utils/errors.js";
+import jwt from "jsonwebtoken";
+import { env } from "../../config/env.js";
+
+const EXPIRES_IN_SECONDS = 60 * 60;
+
+function signAccessToken(payload: { sub: string; email: string; role: Role }): string {
+  return jwt.sign(payload, env.JWT_SECRET, { expiresIn: EXPIRES_IN_SECONDS });
+}
 
 export const authService = {
   async register(input: RegisterInput): Promise<LoginResponse> {
-    const supabase = getSupabasePublic();
-    const { data, error } = await supabase.auth.signUp({
-      email: input.email,
-      password: input.password,
-      options: {
-        data: { full_name: input.full_name ?? null },
-      },
-    });
-    if (error) throw new ValidationError(error.message);
-    if (!data.session || !data.user) throw new UnauthorizedError("Falha ao criar sessão");
-
-    const profile = await profileRepository.findById(data.user.id);
-    const role: Role = (profile?.role as Role) ?? "user";
-
-    return {
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token ?? "",
-      expires_in: data.session.expires_in ?? 3600,
-      user: {
-        id: data.user.id,
-        email: data.user.email ?? "",
-        role,
-      },
-    };
+    throw new ValidationError(
+      "Registro não está habilitado. Este sistema usa autenticação simples por senha de admin."
+    );
   },
 
   async login(email: string, password: string): Promise<LoginResponse> {
-    const supabase = getSupabasePublic();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new UnauthorizedError("Email ou senha inválidos");
-    if (!data.session || !data.user) throw new UnauthorizedError("Sessão não retornada");
-
-    const profile = await profileRepository.findById(data.user.id);
-    const role: Role = (profile?.role as Role) ?? "user";
-
+    if (!password || password !== env.ADMIN_PASSWORD) {
+      throw new UnauthorizedError("Email ou senha inválidos");
+    }
+    const role: Role = "admin";
+    const userId = "admin";
+    const accessToken = signAccessToken({ sub: userId, email: email || "admin@local", role });
     return {
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token ?? "",
-      expires_in: data.session.expires_in ?? 3600,
+      access_token: accessToken,
+      refresh_token: "",
+      expires_in: EXPIRES_IN_SECONDS,
       user: {
-        id: data.user.id,
-        email: data.user.email ?? "",
+        id: userId,
+        email: email || "admin@local",
         role,
       },
     };
   },
 
   async refresh(refreshToken: string): Promise<LoginResponse> {
-    const supabase = getSupabasePublic();
-    const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
-    if (error) throw new UnauthorizedError("Refresh token inválido ou expirado");
-    if (!data.session || !data.user) throw new UnauthorizedError("Sessão não retornada");
-
-    const profile = await profileRepository.findById(data.user.id);
-    const role: Role = (profile?.role as Role) ?? "user";
-
-    return {
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token ?? "",
-      expires_in: data.session.expires_in ?? 3600,
-      user: {
-        id: data.user.id,
-        email: data.user.email ?? "",
-        role,
-      },
-    };
+    throw new UnauthorizedError("Refresh token não suportado neste modo de autenticação");
   },
 
   async getUserFromToken(accessToken: string): Promise<{ id: string; email: string; role: Role } | null> {
-    const supabase = getSupabaseAdmin();
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-    if (error || !user) return null;
-    const profile = await profileRepository.findById(user.id);
-    const role: Role = (profile?.role as Role) ?? "user";
-    return {
-      id: user.id,
-      email: user.email ?? "",
-      role,
-    };
+    try {
+      const decoded = jwt.verify(accessToken, env.JWT_SECRET) as { sub?: string; email?: string; role?: Role };
+      if (!decoded?.sub) return null;
+      return {
+        id: decoded.sub,
+        email: decoded.email ?? "admin@local",
+        role: decoded.role ?? "admin",
+      };
+    } catch {
+      return null;
+    }
   },
 };

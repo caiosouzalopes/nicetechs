@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { authService } from "../modules/auth/auth.service";
-import type { Role } from "../types/auth";
-import { UnauthorizedError, ForbiddenError } from "../utils/errors";
+import { authService } from "../modules/auth/auth.service.js";
+import type { Role } from "../types/auth.js";
+import { UnauthorizedError, ForbiddenError } from "../utils/errors.js";
 
 export interface AuthRequest extends Request {
   user?: { id: string; email: string; role: Role };

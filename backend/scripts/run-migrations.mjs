@@ -1,7 +1,7 @@
 /**
  * Roda as migrations em database/*.sql na ordem, usando DATABASE_URL.
  * Uso: na pasta backend: npm run db:migrate
- * Requer DATABASE_URL no .env (Supabase: Settings → Database → Connection string URI).
+ * Requer DATABASE_URL no .env (connection string Postgres - Neon/Vercel).
  */
 import "dotenv/config";
 import pg from "pg";
@@ -12,12 +12,12 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const databaseDir = join(__dirname, "..", "database");
 
-const order = ["001_schema.sql", "001b_trigger_auth_user.sql", "002_rls.sql", "003_seed.sql"];
+const order = ["001_schema.sql", "002_rls.sql", "003_seed.sql"];
 
 async function main() {
   const url = process.env.DATABASE_URL?.trim();
   if (!url) {
-    console.error("DATABASE_URL não definida. Adicione no backend/.env (Connection string do Supabase).");
+    console.error("DATABASE_URL não definida. Adicione no backend/.env (Connection string Postgres do Neon).");
     process.exit(1);
   }
 

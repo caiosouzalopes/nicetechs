@@ -1,6 +1,4 @@
--- Execute no Supabase SQL Editor após 001_schema.sql
--- Cria o trigger que popula public.profiles quando um usuário se registra em auth.users
-
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+-- (DESATIVADO)
+-- Este arquivo existia para Supabase Auth (trigger em auth.users).
+-- No Neon/Postgres puro não existe schema auth.users.
+-- A autenticação é feita no backend Express via JWT (admin).

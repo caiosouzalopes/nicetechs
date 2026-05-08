@@ -6,29 +6,14 @@
 -- Extensão UUID (Supabase já possui)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Enum para role do usuário
-CREATE TYPE app_role AS ENUM ('admin', 'user');
-
 -- Enum para categoria de produto (alinhado ao frontend)
-CREATE TYPE product_category AS ENUM ('gamer', 'smartphone', 'games', 'accessories');
-
--- -----------------------------------------------------------------------------
--- TABELA: profiles (estende auth.users, criada via trigger)
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
-  full_name TEXT,
-  avatar_url TEXT,
-  role app_role NOT NULL DEFAULT 'user',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-COMMENT ON TABLE public.profiles IS 'Perfil do usuário; espelha auth.users e adiciona role e dados extras.';
-
-CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
-CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'product_category') THEN
+    CREATE TYPE product_category AS ENUM ('gamer', 'smartphone', 'games', 'accessories');
+  END IF;
+END
+$$;
 
 -- Trigger: atualizar updated_at
 CREATE OR REPLACE FUNCTION public.set_updated_at()
@@ -38,33 +23,6 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER profiles_updated_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW EXECUTE PROCEDURE public.set_updated_at();
-
--- Trigger: criar profile ao inserir em auth.users (Supabase Auth)
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, full_name, avatar_url, role)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.email, ''),
-    NEW.raw_user_meta_data->>'full_name',
-    NEW.raw_user_meta_data->>'avatar_url',
-    COALESCE((NEW.raw_user_meta_data->>'role')::app_role, 'user')
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Nota: no Supabase, o trigger em auth.users é criado pelo Dashboard ou por migration
--- em auth schema. Aqui assumimos que auth.users existe.
--- Para conectar: Supabase Dashboard > Database > Triggers > New > on auth.users AFTER INSERT
--- chama handle_new_user(). Ou use: (em projeto Supabase linked)
--- CREATE TRIGGER on_auth_user_created
---   AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- -----------------------------------------------------------------------------
 -- TABELA: products
@@ -129,3 +87,67 @@ RETURNS void AS $$
     clicks = public.product_analytics.clicks + 1,
     updated_at = NOW();
 $$ LANGUAGE sql SECURITY DEFINER;
+
+-- -----------------------------------------------------------------------------
+-- PROCEDURE: sincronizar catálogo de produtos (upsert + soft delete)
+-- Entrada: JSONB no formato { products: [ {id, name, description, image, price, category}, ... ] }
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE public.sync_products(p_payload JSONB)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_products JSONB;
+BEGIN
+  v_products := COALESCE(p_payload->'products', '[]'::jsonb);
+
+  IF jsonb_typeof(v_products) <> 'array' THEN
+    RAISE EXCEPTION 'Campo products deve ser um array JSON';
+  END IF;
+
+  CREATE TEMP TABLE IF NOT EXISTS tmp_products (
+    id UUID,
+    name TEXT,
+    description TEXT,
+    image TEXT,
+    price TEXT,
+    category product_category
+  ) ON COMMIT DROP;
+
+  TRUNCATE TABLE tmp_products;
+
+  INSERT INTO tmp_products (id, name, description, image, price, category)
+  SELECT
+    COALESCE(NULLIF(t.id, '')::uuid, uuid_generate_v4()),
+    COALESCE(NULLIF(t.name, ''), 'Produto'),
+    COALESCE(t.description, ''),
+    COALESCE(t.image, ''),
+    COALESCE(NULLIF(t.price, ''), 'Sob consulta'),
+    COALESCE(t.category, 'gamer')::product_category
+  FROM jsonb_to_recordset(v_products) AS t(
+    id text,
+    name text,
+    description text,
+    image text,
+    price text,
+    category text
+  );
+
+  UPDATE public.products p
+  SET deleted_at = NOW()
+  WHERE p.deleted_at IS NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM tmp_products tp WHERE tp.id = p.id
+    );
+
+  INSERT INTO public.products (id, name, description, image, price, category, deleted_at)
+  SELECT tp.id, tp.name, tp.description, tp.image, tp.price, tp.category, NULL
+  FROM tmp_products tp
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    image = EXCLUDED.image,
+    price = EXCLUDED.price,
+    category = EXCLUDED.category,
+    deleted_at = NULL;
+END;
+$$;

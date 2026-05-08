@@ -3,9 +3,9 @@ import { z } from "zod";
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.string().transform(Number).default("4000"),
-  SUPABASE_URL: z.string().url("SUPABASE_URL deve ser uma URL válida"),
-  SUPABASE_ANON_KEY: z.string().min(1, "SUPABASE_ANON_KEY é obrigatória"),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "SUPABASE_SERVICE_ROLE_KEY é obrigatória"),
+  DATABASE_URL: z.string().min(1, "DATABASE_URL é obrigatória"),
+  JWT_SECRET: z.string().min(16, "JWT_SECRET deve ter no mínimo 16 caracteres"),
+  ADMIN_PASSWORD: z.string().min(1, "ADMIN_PASSWORD é obrigatória"),
 });
 
 export type Env = z.infer<typeof envSchema>;

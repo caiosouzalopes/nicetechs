@@ -1,13 +1,13 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { errorMiddleware } from "./middlewares";
-import authRoutes from "./modules/auth/auth.routes";
-import usersRoutes from "./modules/users/users.routes";
-import productsRoutes from "./modules/products/products.routes";
-import analyticsRoutes from "./modules/analytics/analytics.routes";
-import { env } from "./config/env";
-import { logger } from "./utils/logger";
+import { errorMiddleware } from "./middlewares/index.js";
+import authRoutes from "./modules/auth/auth.routes.js";
+import usersRoutes from "./modules/users/users.routes.js";
+import productsRoutes from "./modules/products/products.routes.js";
+import analyticsRoutes from "./modules/analytics/analytics.routes.js";
+import { env } from "./config/env.js";
+import { logger } from "./utils/logger.js";
 
 const app = express();
 

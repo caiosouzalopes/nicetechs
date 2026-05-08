@@ -1,3 +1,2 @@
-export { productRepository } from "./product.repository";
-export { analyticsRepository } from "./analytics.repository";
-export { profileRepository } from "./profile.repository";
+export { productRepository } from "./product.repository.js";
+export { analyticsRepository } from "./analytics.repository.js";

@@ -1,6 +1,6 @@
-import { productRepository } from "../repositories";
-import type { ProductDto, ProductCreateInput, ProductUpdateInput, ListProductsQuery, PaginatedResult } from "../types/api";
-import type { ProductRow } from "../types/database";
+import { productRepository } from "../repositories/index.js";
+import type { ProductDto, ProductCreateInput, ProductUpdateInput, ListProductsQuery, PaginatedResult } from "../types/api.js";
+import type { ProductRow } from "../types/database.js";
 
 function toDto(row: ProductRow): ProductDto {
   return {

@@ -45,7 +45,7 @@ async function syncProductsToCloud(
       onResult(true);
     } else if (res.status === 503) {
       const data = await res.json().catch(() => ({}));
-      const msg = data?.error ?? "Configure SUPABASE ou JSONBIN no .env.";
+      const msg = data?.error ?? "Configure o banco (DATABASE_URL) ou JSONBIN no .env.";
       onResult(false, msg);
     } else if (res.status === 401) {
       onResult(false, "Senha do admin incorreta. Verifique .env.");
