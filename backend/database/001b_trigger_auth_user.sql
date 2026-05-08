@@ -1,4 +1,0 @@
--- (DESATIVADO)
--- Este arquivo existia para Supabase Auth (trigger em auth.users).
--- No Neon/Postgres puro não existe schema auth.users.
--- A autenticação é feita no backend Express via JWT (admin).
