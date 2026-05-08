@@ -36,8 +36,7 @@ CREATE TRIGGER users_updated_at
 
 -- -----------------------------------------------------------------------------
 -- SEED: Usuário admin inicial
--- Senha padrão: caiooride3
--- Hash gerado via bcrypt (10 rounds) para "caiooride3"
+-- Hash gerado via bcrypt (10 rounds)
 -- -----------------------------------------------------------------------------
 INSERT INTO public.users (id, email, password_hash, role)
 VALUES (
